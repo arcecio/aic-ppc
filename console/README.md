@@ -77,7 +77,7 @@ For NVIDIA Blackwell architecture (e.g., RTX 5000 series), use the `120` image t
 
 ```bash
 docker run --gpus all \
-  -p 8080:80 \
+  -p 8086:80 \
   -v $PWD/data:/data \
   --pull always \
   ghcr.io/huggingface/text-embeddings-inference:120-1.9 \
@@ -115,7 +115,7 @@ text-embeddings-router \
   --max-client-batch-size 8 \
   --max-batch-tokens 4096 \
   --max-concurrent-requests 64 \
-  --port 8080
+  --port 8086
 
 ```
 
@@ -155,7 +155,7 @@ Ensure your server is actually utilizing the GPU rather than falling back to the
 
 1. Send a test request to your local server:
 ```bash
-curl 127.0.0.1:8080/embed \
+curl 127.0.0.1:8086/embed \
   -X POST \
   -d '{"inputs":"Testing the Metal backend"}' \
   -H 'Content-Type: application/json'
