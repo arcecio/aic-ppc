@@ -143,6 +143,7 @@ See [`docs/`](docs/):
 - `06-api.md` — integration API & MCP
 - `07-testing.md` — test strategy
 - `08-requirements-traceability.md` — RTM: requirement → implementation
+- `09-rbac-design.md` — production RBAC design (roles, scopes, maker-checker) — plan of record, not yet implemented
 
 ## Repository layout
 
