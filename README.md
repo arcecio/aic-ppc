@@ -53,9 +53,21 @@ docker compose up --build     # postgres :5434, backend :8082, frontend :8095
 ```
 
 - App: <http://localhost:8095>  ·  API: <http://localhost:8082/api>  ·  Swagger: <http://localhost:8082/swagger-ui.html>
-- Register an account, then restart the backend once so `admin@lacity.gov`
-  (`APP_BOOTSTRAP_ADMIN_EMAIL`) is promoted to STAFF+ADMIN — or set the variable to
-  your own email.
+
+**Becoming staff/admin.** Set `APP_BOOTSTRAP_ADMIN_EMAIL=you@example.com` in `app/.env`,
+register that account in the UI, then recreate the backend container:
+
+```bash
+docker compose up -d backend   # NOT `restart` — restart does not re-read .env
+```
+
+Watch for `Bootstrap: promoted you@example.com to ADMIN` in `docker compose logs backend`,
+then sign out and back in so your JWT picks up the new role.
+
+> Note on precedence: the compose file always injects `APP_BOOTSTRAP_ADMIN_EMAIL` into the
+> container (from `app/.env`, falling back to `admin@lacity.gov`), and that env var
+> **overrides** the default in `application.yml`. Editing `application.yml` has no effect on
+> the Docker stack (it's baked into the jar and only used by non-Docker `bootRun`).
 
 ### Backend only (local dev)
 

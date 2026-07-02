@@ -291,8 +291,11 @@ docker compose up --build     # postgres :5434, backend :8082, frontend :8095
 - Backend-only local dev: `docker compose up -d postgres` then `cd backend && ./gradlew
   bootRun` (backend on `:8080`).
 
-Register an account, then set `APP_BOOTSTRAP_ADMIN_EMAIL` to that email (default
-`admin@lacity.gov`) and restart the backend once to gain STAFF+ADMIN access.
+Register an account, set `APP_BOOTSTRAP_ADMIN_EMAIL` to that email **in `app/.env`**
+(default `admin@lacity.gov`), then recreate the backend with `docker compose up -d backend`
+to gain STAFF+ADMIN access. A plain `docker compose restart` does **not** re-read `.env`;
+and because compose always injects this variable, the `application.yml` default is only
+consulted by non-Docker `bootRun`. Sign out/in afterwards so the JWT carries the new role.
 
 ---
 
@@ -307,7 +310,7 @@ All settings resolve from environment variables with in-file defaults. Key entri
 | `PORT` | `8080` | Backend server port (mapped to 8082 by compose) |
 | `JWT_SECRET` | dev placeholder (≥256-bit) | JWT signing key — **must be replaced in production** |
 | `JWT_EXPIRATION_MS` | `86400000` (24h) | JWT TTL |
-| `APP_BOOTSTRAP_ADMIN_EMAIL` | (blank; compose sets `admin@lacity.gov`) | Email auto-promoted to ADMIN on boot |
+| `APP_BOOTSTRAP_ADMIN_EMAIL` | see note | Email auto-promoted to ADMIN on boot. Compose always injects it (from `app/.env`, falling back to `admin@lacity.gov`), overriding the `application.yml` default — set it in `.env`, not the yml |
 | `STORAGE_PATH` | `./storage` | Upload storage base (compose: `/app/storage`) |
 | `STORAGE_MAX_FILE_BYTES` | `104857600` (100 MB) | Max upload size enforced by the scan |
 | `SCREENING_TARGET_MS` | `1800000` (30 min) | KPI target for the analytics dashboard (SOW §2.2.10) |
