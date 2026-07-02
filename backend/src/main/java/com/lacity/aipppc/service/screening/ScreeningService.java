@@ -248,7 +248,7 @@ public class ScreeningService {
     }
 
     // ── scoring & status ────────────────────────────────────────────────────────
-    int computeScore(int blocking, int warning, int info, CompletenessService.Result completeness) {
+    static int computeScore(int blocking, int warning, int info, CompletenessService.Result completeness) {
         int score = 100 - (blocking * 12) - (warning * 5) - (info * 1);
         if (completeness.requiredCount() > 0) {
             int missing = completeness.requiredCount() - completeness.presentRequiredCount();
@@ -257,7 +257,7 @@ public class ScreeningService {
         return Math.max(0, Math.min(100, score));
     }
 
-    ReadinessStatus computeStatus(boolean completenessBlocking, int blocking, int warning) {
+    static ReadinessStatus computeStatus(boolean completenessBlocking, int blocking, int warning) {
         if (completenessBlocking) return ReadinessStatus.INCOMPLETE;
         if (blocking > 0 || warning > 0) return ReadinessStatus.REQUIRES_ATTENTION;
         return ReadinessStatus.READY_FOR_SUBMISSION;

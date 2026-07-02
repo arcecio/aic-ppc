@@ -56,6 +56,10 @@ dependencies {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+    // Pin the docker-java API version so Testcontainers negotiates cleanly with the
+    // (much newer) Docker daemon Colima ships — without this, image pulls fail with
+    // "Could not find a valid Docker environment" on Colima. Matches the Blue setup.
+    systemProperty("api.version", "1.45")
     environment("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", "/var/run/docker.sock")
 }
 
