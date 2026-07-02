@@ -169,9 +169,13 @@ updates subject to City review and approval). *Initials: ____*
   §2.1.4) — until then, findings reflect the prior edition.
 - External-model availability is not guaranteed; the system **degrades gracefully** to a
   deterministic heuristic, which is narrower in scope.
-- Accuracy targets (≥90% code-violation identification, SOW §2.1.4) are validated pre-deployment
-  and monitored (precision/recall/agreement/false-positive/false-negative), with quarterly
-  performance reports to the City.
+- Accuracy targets (≥90% code-violation identification, SOW §2.1.4) **must be validated
+  pre-deployment** against a City-provided corpus of plans with known violations, and
+  continuously monitored (precision/recall/agreement/false-positive/false-negative rates) with
+  quarterly performance reports to the City. **Status: this validation has NOT yet been
+  performed** — no labeled test corpus exists in this environment. The measurement
+  infrastructure is in place (staff accept/modify/reject dispositions provide ground-truth
+  labels; per-run KPI capture on `PreCheckRun`), but no accuracy figure is claimed for the MVP.
 
 **2. Human Oversight & Governance.**
 - **Documented intended use:** advisory pre-plan-check only (this document and the SOW).
