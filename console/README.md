@@ -49,3 +49,119 @@ the same machine.)
 | POST | `/api/services/:id/start` | Start in the current mode |
 | POST | `/api/services/:id/stop` | Stop (docker stop / SIGTERM to the process group) |
 | GET | `/api/services/:id/logs?tail=200` | Tail logs (docker logs / native log file) |
+
+# Text Embeddings Inference (TEI) Setup Guide
+
+This guide provides instructions for deploying and troubleshooting Hugging Face's Text Embeddings Inference (TEI) server for large models (e.g., `intfloat/e5-large-v2`). It covers optimized setups for NVIDIA GPUs and Apple Silicon, as well as common memory exhaustion issues.
+
+## Table of Contents
+
+* [Running on NVIDIA GPUs (Docker)](https://www.google.com/search?q=%23running-on-nvidia-gpus-docker)
+* [Running on Apple Silicon (macOS Native)](https://www.google.com/search?q=%23running-on-apple-silicon-macos-native)
+* [Troubleshooting: Server Hangs on "Warming up model"](https://www.google.com/search?q=%23troubleshooting-server-hangs-on-warming-up-model)
+* [Verifying Hardware Acceleration](https://www.google.com/search?q=%23verifying-hardware-acceleration)
+
+---
+
+## Running on NVIDIA GPUs (Docker)
+
+To utilize NVIDIA GPUs, you must run TEI via Docker using the correct architecture-specific image.
+
+**Prerequisites:**
+
+* Docker installed.
+* [NVIDIA Container Toolkit](https://www.google.com/search?q=https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) installed on the host system to enable GPU passthrough.
+
+**Launch Command:**
+For NVIDIA Blackwell architecture (e.g., RTX 5000 series), use the `120` image tag.
+
+```bash
+docker run --gpus all \
+  -p 8080:80 \
+  -v $PWD/data:/data \
+  --pull always \
+  ghcr.io/huggingface/text-embeddings-inference:120-1.9 \
+  --model-id intfloat/e5-large-v2 \
+  --max-client-batch-size 8 \
+  --max-batch-tokens 4096 \
+  --max-concurrent-requests 64
+
+```
+
+> **Note:** If switching from a previous CPU-bound container, ensure you stop and remove the old container (`docker stop <id>` and `docker rm <id>`) before launching the GPU container to prevent port conflicts.
+
+---
+
+## Running on Apple Silicon (macOS Native)
+
+**Do not use Docker on macOS.** Docker on macOS runs inside a Linux virtual machine, which cannot access the physical Apple Silicon GPU (M-series). If run via Docker, TEI will fall back to the CPU and perform poorly.
+
+To utilize Apple's Metal Performance Shaders (MPS), you must install and run the server natively.
+
+**1. Install via Homebrew:**
+Hugging Face provides a pre-compiled, Metal-optimized binary for macOS.
+
+```bash
+brew install text-embeddings-inference
+
+```
+
+**2. Launch the Native Router:**
+Weights are automatically stored in your native `~/.cache/huggingface/hub` directory.
+
+```bash
+text-embeddings-router \
+  --model-id intfloat/e5-large-v2 \
+  --max-client-batch-size 8 \
+  --max-batch-tokens 4096 \
+  --max-concurrent-requests 64 \
+  --port 8080
+
+```
+
+---
+
+## Troubleshooting: Server Hangs on "Warming up model"
+
+If the server logs reach `Warming up model` and hang indefinitely (or the process crashes silently), the host system has likely run out of memory (RAM/VRAM). During the warmup phase, TEI runs a forward pass using your maximum configured batch limits to pre-allocate memory.
+
+**Resolution:**
+Lower the batch and concurrency limits in your launch command. Heavy models like `e5-large-v2` require massive memory to initialize at default settings.
+
+Add or adjust the following flags to establish a safe baseline:
+
+```bash
+--max-client-batch-size 8 \
+--max-batch-tokens 4096 \
+--max-concurrent-requests 64
+
+```
+
+*Once the server successfully boots with these baseline settings, you can incrementally increase `--max-batch-tokens` to maximize your specific hardware's throughput.*
+
+---
+
+## Verifying Hardware Acceleration
+
+Ensure your server is actually utilizing the GPU rather than falling back to the CPU.
+
+### For NVIDIA (Linux/Windows)
+
+1. Send a test embedding request to the server.
+2. In a separate terminal, run `watch -n 1 nvidia-smi`.
+3. You should see the `text-embeddings-router` process consuming VRAM, with GPU utilization spiking when the request is processed.
+
+### For Apple Silicon (macOS)
+
+1. Send a test request to your local server:
+```bash
+curl 127.0.0.1:8080/embed \
+  -X POST \
+  -d '{"inputs":"Testing the Metal backend"}' \
+  -H 'Content-Type: application/json'
+
+```
+
+
+2. **GUI Check:** Open `Activity Monitor`, press `Cmd + 4` (GPU History), and watch for a spike when the request hits.
+3. **Terminal Check:** Run `sudo powermetrics --samplers gpu_power -n 10` and monitor the `GPU active residency` percentage. It should jump significantly from 0% when processing the payload.
