@@ -77,6 +77,17 @@ cd app && docker compose up -d postgres      # just the DB on :5434
 cd backend && ./gradlew bootRun               # backend on :8080
 ```
 
+### Dev console (local control plane)
+
+Ported from Blue's `console/`: a small SPA + Express server to start/stop and
+health-check postgres, backend, frontend, and TEI — each toggleable between
+Docker and native mode, with live logs. Dev tooling only.
+
+```bash
+cd console && npm run install:all && npm run dev
+# SPA: http://127.0.0.1:5175  ·  API: http://127.0.0.1:9091/api
+```
+
 ### Tests
 
 ```bash
@@ -152,6 +163,7 @@ See [`docs/`](docs/):
 app/
 ├── backend/     Spring Boot service (engine, rules, AI, API)
 ├── frontend/    React web app (applicant + staff)
+├── console/     Local dev control plane (start/stop/health, Docker↔native)
 ├── docs/        Architecture, API, RTM, governance
 └── docker-compose.yml
 ```

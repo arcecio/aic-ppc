@@ -302,6 +302,10 @@ docker compose up --build     # postgres :5434, backend :8082, frontend :8095
   `http://localhost:8082/swagger-ui.html`
 - Backend-only local dev: `docker compose up -d postgres` then `cd backend && ./gradlew
   bootRun` (backend on `:8080`).
+- Dev console (`console/`, ported from Blue): SPA on `:5175` + Express server on `:9091`
+  to start/stop/health-check postgres, backend, frontend, and TEI, each toggleable
+  Docker↔native, with log tailing (`cd console && npm run install:all && npm run dev`).
+  Dev tooling only — not part of the delivered product.
 
 Register an account, set `APP_BOOTSTRAP_ADMIN_EMAIL` to that email **in `app/.env`**
 (default `admin@lacity.gov`), then recreate the backend with `docker compose up -d backend`
