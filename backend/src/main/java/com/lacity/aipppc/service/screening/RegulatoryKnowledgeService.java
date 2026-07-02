@@ -2,6 +2,10 @@ package com.lacity.aipppc.service.screening;
 
 import com.lacity.aipppc.model.RegulatoryCode;
 import com.lacity.aipppc.repository.RegulatoryCodeRepository;
+import com.lacity.aipppc.service.embedding.EmbeddingService;
+import com.lacity.aipppc.service.rag.RrfFusion;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -9,40 +13,79 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 
 /**
- * Lightweight retrieval over the regulatory knowledgebase (SOW 2.1.1). Given the
- * project context it selects the most relevant code sections and formats them as
- * a compact context block passed to the AI provider, and it can resolve a code
- * reference back to its canonical URL to enrich findings with links (SOW 2.2.4 —
- * "include relevant code references (including links whenever possible)").
+ * Hybrid retrieval over the regulatory knowledgebase (SOW 2.1.1), Blue-style:
+ * <ul>
+ *   <li><b>Lexical arm</b> — keyword search over title/summary/tags/section,
+ *       with query terms derived from the project context (zone, overlays,
+ *       hazards, salient words from the submission text).</li>
+ *   <li><b>Vector arm</b> — the same query embedded via the TEI sidecar
+ *       (e5-large-v2) against the pgvector HNSW index (cosine).</li>
+ * </ul>
+ * The two rankings are fused with Reciprocal Rank Fusion (k=60) and the top
+ * sections become the compact context block handed to the AI provider. The
+ * vector arm degrades silently to lexical-only when the embedding sidecar is
+ * absent — retrieval never blocks a screening run. Also resolves code references
+ * back to canonical URLs so findings carry links (SOW 2.2.4).
  */
 @Service
 public class RegulatoryKnowledgeService {
 
+    private static final Logger log = LoggerFactory.getLogger(RegulatoryKnowledgeService.class);
     private static final int MAX_SNIPPETS = 8;
+    private static final int PER_RETRIEVER_LIMIT = 10;
 
     private final RegulatoryCodeRepository repository;
+    private final EmbeddingService embeddingService;
 
-    public RegulatoryKnowledgeService(RegulatoryCodeRepository repository) {
+    public RegulatoryKnowledgeService(RegulatoryCodeRepository repository,
+                                      EmbeddingService embeddingService) {
         this.repository = repository;
+        this.embeddingService = embeddingService;
     }
 
-    /** Builds a de-duplicated, ranked context block from keyword terms in the project. */
+    /** Builds the ranked, de-duplicated context block for the AI provider. */
     public String buildContext(Map<String, Object> ctx) {
         List<String> terms = keywords(ctx);
-        Map<String, RegulatoryCode> hits = new LinkedHashMap<>();
+        Map<String, RegulatoryCode> byExternalId = new LinkedHashMap<>();
+
+        // ── lexical arm ─────────────────────────────────────────────────────────
+        List<String> lexicalRanked = new ArrayList<>();
         for (String term : terms) {
             for (RegulatoryCode c : repository.search(term)) {
-                hits.putIfAbsent(c.getExternalId(), c);
-                if (hits.size() >= MAX_SNIPPETS * 2) break;
+                if (byExternalId.putIfAbsent(c.getExternalId(), c) == null) {
+                    lexicalRanked.add(c.getExternalId());
+                }
+                if (lexicalRanked.size() >= PER_RETRIEVER_LIMIT) break;
             }
-            if (hits.size() >= MAX_SNIPPETS * 2) break;
+            if (lexicalRanked.size() >= PER_RETRIEVER_LIMIT) break;
         }
+
+        // ── vector arm (degrades to empty when the sidecar is unavailable) ──────
+        List<String> vectorRanked = new ArrayList<>();
+        Optional<float[]> queryVector = embeddingService.embedQuery(queryText(ctx, terms));
+        if (queryVector.isPresent()) {
+            String literal = EmbeddingService.toVectorLiteral(queryVector.get());
+            for (RegulatoryCode c : repository.searchByEmbedding(literal, PER_RETRIEVER_LIMIT)) {
+                byExternalId.putIfAbsent(c.getExternalId(), c);
+                vectorRanked.add(c.getExternalId());
+            }
+        }
+
+        // ── RRF fusion ──────────────────────────────────────────────────────────
+        List<String> fused = RrfFusion.fuse(List.of(lexicalRanked, vectorRanked));
+        log.debug("KB retrieval: {} lexical, {} vector, {} fused (vector arm {})",
+            lexicalRanked.size(), vectorRanked.size(), fused.size(),
+            queryVector.isPresent() ? "on" : "off");
+
         StringBuilder sb = new StringBuilder();
         int n = 0;
-        for (RegulatoryCode c : hits.values()) {
+        for (String externalId : fused) {
             if (n++ >= MAX_SNIPPETS) break;
+            RegulatoryCode c = byExternalId.get(externalId);
+            if (c == null) continue;
             sb.append("[").append(c.getCodeType()).append(" ").append(c.getSection()).append("] ")
               .append(c.getTitle()).append(" — ")
               .append(c.getSummary() == null ? "" : c.getSummary()).append("\n");
@@ -58,6 +101,16 @@ public class RegulatoryKnowledgeService {
             if (c.getUrl() != null) return c.getUrl();
         }
         return null;
+    }
+
+    /** Natural-language query for the vector arm: terms + a slice of the submission text. */
+    private String queryText(Map<String, Object> ctx, List<String> terms) {
+        StringBuilder sb = new StringBuilder(String.join(" ", terms));
+        Object text = ctx.get("text");
+        if (text instanceof String s && !s.isBlank()) {
+            sb.append(' ').append(s, 0, Math.min(s.length(), 500));
+        }
+        return sb.toString();
     }
 
     @SuppressWarnings("unchecked")

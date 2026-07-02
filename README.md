@@ -37,8 +37,9 @@ on Docker/Colima) and is deployed to <https://github.com/arcecio/aic-ppc>.
 | Layer     | Choice |
 |-----------|--------|
 | Backend   | Spring Boot 3.3, Java 21, Gradle (Kotlin DSL) |
-| Database  | PostgreSQL 16 (Flyway migrations, JPA `validate`) |
+| Database  | PostgreSQL 16 + **pgvector** (Flyway migrations, JPA `validate`) |
 | AI        | Anthropic Claude (`AnthropicAiProvider`) with a deterministic offline `HeuristicAiProvider` fallback |
+| Retrieval | Hybrid knowledgebase RAG: lexical + pgvector cosine (e5-large-v2 via optional TEI sidecar), RRF-fused; degrades to lexical-only |
 | Docs      | Plan text via Apache PDFBox (PDF) & POI (DOCX); PDF report via PDFBox |
 | API docs  | springdoc OpenAPI / Swagger UI |
 | Frontend  | Vite + React 18 + TypeScript, TanStack Query, Tailwind (WCAG/ADA) |
@@ -100,6 +101,35 @@ Rules are the **primary** mechanism; AI **augments** them. A run executes:
 
 Every finding and clearance is advisory, carries a **confidence** score and code
 **reference/link**, and enters staff review as `PENDING` (human-in-the-loop).
+
+## Knowledgebase: updates & retrieval (SOW §2.1)
+
+The regulatory corpus (`regulatory_codes`: LAMC Ch. I/1A/IX, Title 24, CALGreen,
+CBC 11B, Clearance Handbook extracts) is **upserted by `external_id`** — amendments
+update sections in place, never duplicate. Three update paths, all audited:
+
+1. **Release corpus** — the bundled `seed/regulatory-codes.json` re-syncs on every boot.
+2. **Admin import** — `POST /api/admin/regulatory-codes/import` bulk-upserts a corpus
+   drop between releases (plus full CRUD and `POST …/sync`, `GET …/status`).
+3. **Scheduler** — a monthly refresh (`KB_SCHEDULER_ENABLED`, default cron
+   `0 0 4 1 * *`) re-runs sync + embedding backfill (SOW §2.2.13).
+
+Retrieval to the LLM is **hybrid RAG**: a lexical arm (keyword search) and a vector
+arm (pgvector HNSW cosine over e5-large-v2 embeddings) fused with Reciprocal Rank
+Fusion; the top sections are injected into Claude's prompt as code context, and AI
+citations are resolved back to canonical URLs. The vector arm needs the optional
+**TEI sidecar**:
+
+```bash
+# macOS (Apple Silicon — native binary; the amd64 TEI image crawls under Rosetta):
+brew install text-embeddings-inference
+text-embeddings-router --model-id intfloat/e5-large-v2 --port 8086
+
+# linux/amd64:
+docker compose --profile docker-tei up   # then EMBEDDING_URL=http://tei:80
+```
+
+Without it, everything still works — retrieval silently degrades to lexical-only.
 
 ## Documentation
 

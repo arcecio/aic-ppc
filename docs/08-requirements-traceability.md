@@ -26,11 +26,11 @@ is given.
 
 | Req # | Requirement (abbrev.) | Implementing component(s) | Status |
 |---|---|---|---|
-| 1.1.1 | Ingest/parse complex regulatory data (LAMC Ch I/IX/1A; Title 24; Clearance Handbook) | `model/RegulatoryCode.java`, `service/ReferenceDataSeeder.java` (`seedRegulatoryCodes`), `resources/seed/regulatory-codes.json`, `service/screening/RegulatoryKnowledgeService.java` | Partial (structured knowledgebase + lexical retrieval; full document-ingestion pipeline is a data task) |
+| 1.1.1 | Ingest/parse complex regulatory data (LAMC Ch I/IX/1A; Title 24; Clearance Handbook) | `model/RegulatoryCode.java`, `resources/seed/regulatory-codes.json`, `service/knowledge/KnowledgeSyncService.java` (upsert by `external_id`), `service/knowledge/KnowledgeIndexService.java` (embeddings), `service/screening/RegulatoryKnowledgeService.java` (hybrid lexical+vector retrieval, RRF) | Partial (structured knowledgebase, upsert ingestion, hybrid RAG implemented; live amlegal/ladbs.org document fetchers are a data-pipeline task) |
 | 1.1.2 | Use historical correction patterns to prioritize high-frequency errors | `model/ScreeningRule.java.priority`, seed rule priorities; `model/FeedbackEntry.java` (feedback loop) | Partial (priority ordering + feedback inbox exist; historical-pattern mining designed) |
 | 1.1.3 | Identify code violations with measurable, continuously improving accuracy | `service/screening/ScreeningService.java`, `service/ai/*`; `model/Finding.java.confidence`; KPI fields on `PreCheckRun` | Partial (findings + confidence today; ≥90% accuracy metrics/monitoring per SOW §2.1.4 designed) |
 | 1.2.1 | Configurable zoning/building/geographic/fire logic by City staff (no vendor code) | `model/ScreeningRule.java`, `model/ClearanceRule.java`, `service/rules/RuleConditionEvaluator.java`, `service/RuleAdminService.java`, `controller/AdminController.java` (`/api/admin/screening-rules`, `/api/admin/clearance-rules` GET/POST/PUT/DELETE), `dto/admin/*`, `frontend/src/pages/AdminRules.tsx` | Implemented (engine + data model + staff CRUD API/UI) |
-| 1.2.2 | Agile update to incorporate code amendments within 30 days | `service/ReferenceDataSeeder.java` (idempotent by natural key), configurable rule rows | Partial (data-driven updates supported; 30-day process is operational) |
+| 1.2.2 | Agile update to incorporate code amendments within 30 days | `service/knowledge/KnowledgeSyncService.java` (amendments update in place), `AdminKnowledgeController` (`POST /api/admin/regulatory-codes/import`, `/sync`), `KnowledgeRefreshScheduler` (monthly), configurable rule rows | Implemented (data-driven amendment path, no vendor code changes; 30-day SLA is operational) |
 
 ### 2.0 System Integration & Interoperability
 
@@ -175,12 +175,12 @@ is given.
 | SOW § | Topic | Implementing component(s) | Status |
 |---|---|---|---|
 | §1.1 / §2.2.9 / §4.3 | Advisory-only, human-in-the-loop, no permit issuance | `ReportService` (disclaimer), `ScreeningService.buildSummary`, `StaffDisposition`, no "rejected" project state | Implemented |
-| §2.1.1 | Core regulatory training / knowledgebase | `RegulatoryCode`, `regulatory-codes.json`, `RegulatoryKnowledgeService` | Partial |
+| §2.1.1 | Core regulatory training / knowledgebase | `RegulatoryCode`, `regulatory-codes.json`, `KnowledgeSyncService` (upsert), `KnowledgeIndexService` + pgvector (V4), `RegulatoryKnowledgeService` (hybrid RAG, RRF k=60) | Partial (knowledgebase + hybrid retrieval implemented; live source-document fetchers designed) |
 | §2.1.2 | Rule extraction & logic mapping | `ScreeningRule.conditionJson`, `RuleConditionEvaluator` | Implemented (engine); full extraction pipeline designed |
 | §2.1.3 | Review-sequence logic (foundational before detailed) | `ScreeningRule.priority`, `findByActiveTrueOrderByPriorityAsc` | Implemented |
 | §2.1.4 | Plan recognition; ≥90% accuracy; quarterly eval; 30-day amendments; versioning | `PreCheckRun.codeVersion`; accuracy program | Partial (versioning present; accuracy monitoring designed) |
 | §2.1.5 | Inter-departmental clearance logic | `ClearanceRule`, `clearance-rules.json`, `enums/Department.java` | Implemented |
-| §2.1.6 | Versioning & maintenance without vendor code (e.g. AB 2097) | `ReferenceDataSeeder` (idempotent), configurable rules (`PARK-AB2097-TRANSIT`) | Implemented |
+| §2.1.6 | Versioning & maintenance without vendor code (e.g. AB 2097) | `KnowledgeSyncService` (upsert by `external_id`), `AdminKnowledgeController` (CRUD/import/sync/status), `KnowledgeRefreshScheduler`, configurable rules (`PARK-AB2097-TRANSIT`), `PreCheckRun.codeVersion` per-run stamp | Implemented |
 | §2.2.1 | Project initiation & intake (identity, docs, dynamic forms, GIS, UPID) | `ProjectService.create`, `PermitType`, `ParcelService`, `StorageService`, UPID generator | Partial (all present; live Angeleno/BuildLA/GIS designed) |
 | §2.2.2 | Completeness validation + readiness score/status; never blocks submission | `CompletenessService`, `ScreeningService.computeScore/computeStatus` | Implemented |
 | §2.2.3 | Rule-based primary + AI-assisted enhancement; staff-configurable | `RuleConditionEvaluator`, `service/ai/*`, `AiAnalysisService` | Implemented |
@@ -192,7 +192,7 @@ is given.
 | §2.2.10 | ≤30 min for 90%; real-time status; performance logs; WCAG | `AsyncConfig`, `PreCheckRun.processingMs`, `RunStatus`, `app.screening.target-processing-ms`, `frontend/` (WCAG) | Implemented |
 | §2.2.11 | Web UI: Auth0/Okta, RBAC, upload+scan, results, dashboard, version comparison | `frontend/src/` (all pages), `security/*`, `StorageService`, multiple runs per project | Partial (full React UI + multi-run model implemented; live Auth0/Okta federation designed) |
 | §2.2.12 | Analytics/KPIs; intake-pathway tracking; PowerBI/SAP export; adoption | `Project.usedAipPpc`, `TriggeredBy`, `PreCheckRun` KPIs, `AuditLog`, `service/AnalyticsService.java`, `GET /api/staff/analytics`, `frontend/src/pages/StaffDashboard.tsx` | Partial (KPIs + in-app dashboard implemented; PowerBI/SAP export designed) |
-| §2.2.13 | Learning & feedback; no City-data training without approval; auditable | `FeedbackEntry`, `FeedbackService`, `RunController.feedback`, `StaffController` feedback triage, `AuditService`; Exhibit 7 §5 | Partial (feedback capture + staff triage + audit implemented; controlled model-update workflow designed) |
+| §2.2.13 | Learning & feedback; automated monthly reference updates; auditable | `FeedbackEntry`, `FeedbackService`, `RunController.feedback`, `StaffController` feedback triage, `KnowledgeRefreshScheduler` (monthly cron, audited sync), `AuditService`; Exhibit 7 §5 | Implemented (feedback loop + monthly automated refresh + audit; parcel/APN live GIS feeds designed) |
 | §2.2.14 | Integration: ePlanLA/LACPS/BuildLA/ZIMAS, async, webhooks, headless, audit/overrides | `controller/IntegrationApiController.java`, `service/IntegrationService.java`, `ApiClient`, `ApiKeyAuthFilter`, `ScreeningWebhookNotifier`, `McpController` | Implemented (`/api/v1` headless + async + webhooks + audit/override; live ePlanLA/LACPS/BuildLA/ZIMAS system integration designed) |
 | §2.2.15 | Authentication: Angeleno/Auth0 external, Okta internal, RBAC | `security/JwtAuthFilter.java`, `ApiKeyAuthFilter`, `SecurityConfig`, `User.Role`, `AdminUserService` | Partial (RBAC + JWT + API-key auth implemented; live Angeleno/Auth0/Okta federation designed) |
 | §4.1.1 | Digital Code of Ethics; legal/privacy/anti-discrimination compliance | Governance posture (`05-ai-and-governance.md`) | Designed |
@@ -230,7 +230,7 @@ is given.
   analysis (OCR/title-block/scale detection, plan-viewer overlays, PowerBI/SAP export, accuracy
   monitoring, CAD/BIM deep parsing) is not yet built.
 - **Designed / not built:** live external City-system integrations, direct PowerBI/SAP export
-  connectors, pgvector semantic RAG, deep CAD/BIM parsing, and the Phase-2 LACPS/Formal-Plan-Check
+  connectors, live amlegal/GIS source fetchers, deep CAD/BIM parsing, and the Phase-2 LACPS/Formal-Plan-Check
   capabilities.
 
 This RTM has been re-verified against the source tree following the landing of the staff-review

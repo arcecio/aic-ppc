@@ -87,13 +87,21 @@ All of the above are **implemented**; their security matchers are defined in `Se
 | `IntegrationService` | orchestrates the `/api/v1` headless flow (submit, screen, poll, results) |
 | `JsonUtil` | JSON helpers (read tree, to map, to string list) |
 | `AdminBootstrapRunner` | idempotently promotes a configured email to ADMIN on boot |
-| `ReferenceDataSeeder` | idempotent boot-time seeding of permit types, parcels, codes, and both rule packs |
+| `ReferenceDataSeeder` | boot-time seeding: add-only for staff-editable config (permit types, parcels, rule packs); delegates the code corpus to `KnowledgeSyncService` (upsert) |
+| **`service/knowledge/`** | |
+| `KnowledgeSyncService` | corpus ingestion, **upsert by `external_id`** (classpath corpus + admin import), audited |
+| `KnowledgeIndexService` | embedding backfill for sections without a vector (batched, no-op offline) |
+| `KnowledgeRefreshScheduler` | monthly `@Scheduled` re-sync + re-embed (SOW 2.2.13), `KB_SCHEDULER_ENABLED`-gated |
+| **`service/embedding/`** | |
+| `EmbeddingProvider` / `TeiEmbeddingProvider` | TEI sidecar client (e5-large-v2, `passage:`/`query:` prefixes, cool-down on failure) |
+| `EmbeddingService` | failure-tolerant facade; pgvector literal helper |
+| `RrfFusion` (`service/rag/`) | Reciprocal Rank Fusion (k=60) of the lexical + vector rankings |
 | **`service/screening/`** | |
 | `ScreeningService` | the async pipeline orchestrator (see below) |
 | `ProjectContextBuilder` | flattens project/parcel/form/docs into the rule context |
 | `CompletenessService` | required-document + submission-issue validation |
 | `RuleConditionEvaluator` (`service/rules/`) | evaluates the JSON condition grammar |
-| `RegulatoryKnowledgeService` | lexical retrieval over the code knowledgebase; reference→URL |
+| `RegulatoryKnowledgeService` | **hybrid retrieval** over the code knowledgebase: lexical + pgvector cosine arms, RRF-fused, degrades to lexical-only without the sidecar; reference→URL |
 | `TemplateRenderer` | `{{placeholder}}` substitution in messages |
 | `ScreeningWebhookNotifier` | fires `screening.completed` webhooks for API-triggered runs |
 | **`service/ai/`** | |
@@ -174,11 +182,15 @@ Inside `runScreening(runId)` the pipeline runs in order:
    emit a `Finding` (source `RULE`).
 6. **Clearance identification** — active `clearance_rules` in priority order; same
    applies-to + condition check; emit a `Clearance` (source `RULE`).
-7. **AI augmentation** — `AiAnalysisService.analyze()` runs the active provider (Anthropic if
-   keyed and available, else the heuristic). AI findings whose titles duplicate an existing
-   finding are skipped (`containsTitle`); the rest are added (source `AI`). Code references
-   are resolved to URLs via `RegulatoryKnowledgeService`. The provider + model used are
-   stamped on the run.
+7. **AI augmentation** — `RegulatoryKnowledgeService.buildContext()` first retrieves the
+   most relevant code sections (lexical keyword arm + pgvector cosine arm over e5-large-v2
+   embeddings, RRF-fused k=60, top-8; vector arm silently off when the TEI sidecar is
+   unreachable) and injects them into the prompt as "RELEVANT CODE CONTEXT".
+   `AiAnalysisService.analyze()` then runs the active provider (Anthropic if keyed and
+   available, else the heuristic). AI findings whose titles duplicate an existing finding
+   are skipped (`containsTitle`); the rest are added (source `AI`). Code references are
+   resolved to URLs via `RegulatoryKnowledgeService`. The provider + model used are stamped
+   on the run.
 8. **Persist + roll up** — `saveAll` findings and clearances; compute counts, score, and
    status; write the run summary (ending with the advisory-only disclaimer); set the run
    `COMPLETED`, `completedAt`, `processingMs`. Denormalize score/status onto the project and
@@ -313,6 +325,11 @@ All settings resolve from environment variables with in-file defaults. Key entri
 | `APP_BOOTSTRAP_ADMIN_EMAIL` | see note | Email auto-promoted to ADMIN on boot. Compose always injects it (from `app/.env`, falling back to `admin@lacity.gov`), overriding the `application.yml` default — set it in `.env`, not the yml |
 | `STORAGE_PATH` | `./storage` | Upload storage base (compose: `/app/storage`) |
 | `STORAGE_MAX_FILE_BYTES` | `104857600` (100 MB) | Max upload size enforced by the scan |
+| `EMBEDDING_ENABLED` | `true` | Vector-retrieval arm on/off (degrades to lexical-only when off/unreachable) |
+| `EMBEDDING_URL` | `http://localhost:8086` | TEI sidecar URL (compose: `host.docker.internal:8086`; `http://tei:80` with the `docker-tei` profile). 8086, not Blue's 8081, to avoid a port collision on shared Colima VMs |
+| `EMBEDDING_MODEL` / `EMBEDDING_DIM` | `intfloat/e5-large-v2` / `1024` | Embedding model + dimension (matches the `vector(1024)` column) |
+| `KB_SCHEDULER_ENABLED` | `false` (compose: `true`) | Monthly knowledgebase refresh (SOW 2.2.13) |
+| `KB_SCHEDULER_CRON` | `0 0 4 1 * *` | Refresh cadence — 04:00 on the 1st of each month |
 | `SCREENING_TARGET_MS` | `1800000` (30 min) | KPI target for the analytics dashboard (SOW §2.2.10) |
 | `AI_PROVIDER` | `anthropic` | AI provider: `anthropic` or `none` |
 | `ANTHROPIC_API_KEY` | (blank) | Enables the Claude provider; blank → heuristic fallback |

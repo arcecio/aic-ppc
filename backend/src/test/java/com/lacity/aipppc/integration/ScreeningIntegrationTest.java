@@ -40,7 +40,8 @@ class ScreeningIntegrationTest {
 
     @Container
     @ServiceConnection
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16");
+    static PostgreSQLContainer<?> postgres =
+        new PostgreSQLContainer<>(com.lacity.aipppc.support.TestPostgres.IMAGE);
 
     @DynamicPropertySource
     static void props(DynamicPropertyRegistry registry) {

@@ -17,12 +17,15 @@ import java.io.InputStream;
 import java.util.Locale;
 
 /**
- * Loads the JSON seed corpus (permit types, parcels, regulatory knowledgebase,
- * and the two rule packs) into the database on boot. Idempotent by natural key —
- * an entry that already exists is left untouched, so City staff edits to rules or
- * permit types are never clobbered on restart. This is how the RFP's
- * "knowledgebase" and "configurable rule-based engine" are provisioned (SOW 2.1,
- * 2.2.3, 2.2.5).
+ * Loads the JSON seed corpus into the database on boot. Two idempotency modes:
+ * <ul>
+ *   <li><b>Add-only</b> for staff-editable configuration (permit types, parcels,
+ *       screening/clearance rules) — existing rows are never touched, so staff
+ *       edits survive restarts (Appendix 3 §5.1.6).</li>
+ *   <li><b>Upsert by external_id</b> for the regulatory knowledgebase, delegated
+ *       to {@link com.lacity.aipppc.service.knowledge.KnowledgeSyncService} — a
+ *       new release's corpus updates code sections in place (SOW 2.1.6).</li>
+ * </ul>
  */
 @Component
 @Order(20)
@@ -33,29 +36,30 @@ public class ReferenceDataSeeder implements ApplicationRunner {
     private final ObjectMapper mapper;
     private final PermitTypeRepository permitTypes;
     private final ParcelRepository parcels;
-    private final RegulatoryCodeRepository codes;
     private final ScreeningRuleRepository screeningRules;
     private final ClearanceRuleRepository clearanceRules;
+    private final com.lacity.aipppc.service.knowledge.KnowledgeSyncService knowledgeSyncService;
 
     public ReferenceDataSeeder(ObjectMapper mapper,
                                PermitTypeRepository permitTypes,
                                ParcelRepository parcels,
-                               RegulatoryCodeRepository codes,
                                ScreeningRuleRepository screeningRules,
-                               ClearanceRuleRepository clearanceRules) {
+                               ClearanceRuleRepository clearanceRules,
+                               com.lacity.aipppc.service.knowledge.KnowledgeSyncService knowledgeSyncService) {
         this.mapper = mapper;
         this.permitTypes = permitTypes;
         this.parcels = parcels;
-        this.codes = codes;
         this.screeningRules = screeningRules;
         this.clearanceRules = clearanceRules;
+        this.knowledgeSyncService = knowledgeSyncService;
     }
 
     @Override
     public void run(ApplicationArguments args) {
         seedPermitTypes();
         seedParcels();
-        seedRegulatoryCodes();
+        // Knowledgebase: upsert-by-external_id + embedding backfill (no-op offline).
+        knowledgeSyncService.syncFromClasspath("SYSTEM");
         seedScreeningRules();
         seedClearanceRules();
     }
@@ -117,30 +121,6 @@ public class ReferenceDataSeeder implements ApplicationRunner {
             added++;
         }
         if (added > 0) log.info("Seeded {} parcels", added);
-    }
-
-    private void seedRegulatoryCodes() {
-        JsonNode arr = load("seed/regulatory-codes.json");
-        if (arr == null || !arr.isArray()) return;
-        int added = 0;
-        for (JsonNode n : arr) {
-            String externalId = n.path("externalId").asText();
-            if (externalId.isBlank() || codes.findByExternalId(externalId).isPresent()) continue;
-            RegulatoryCode c = RegulatoryCode.builder()
-                .externalId(externalId)
-                .jurisdiction(parseEnum(Jurisdiction.class, n.path("jurisdiction").asText(), Jurisdiction.CITY_LA))
-                .codeType(n.path("codeType").asText("LAMC"))
-                .section(n.path("section").asText(""))
-                .title(n.path("title").asText(externalId))
-                .summary(text(n, "summary"))
-                .url(text(n, "url"))
-                .tags(text(n, "tags"))
-                .version(text(n, "version"))
-                .build();
-            codes.save(c);
-            added++;
-        }
-        if (added > 0) log.info("Seeded {} regulatory codes", added);
     }
 
     private void seedScreeningRules() {

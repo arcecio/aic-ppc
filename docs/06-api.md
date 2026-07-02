@@ -362,6 +362,29 @@ Creating an API client returns the raw `X-API-Key` **once** (`aip_live_<40 hex>`
 SHA-256 hash is persisted (`ApiKeyHasher`). Rule create/update/delete and client/user changes are
 recorded in the append-only `audit_log`.
 
+### Knowledgebase — `/api/admin/regulatory-codes` (AdminKnowledgeController — implemented)
+
+The update path for the regulatory corpus (SOW §2.1.6, §2.2.13). All entries are
+**upserted by `externalId`** — amendments update sections in place, never duplicate.
+Every write is audited.
+
+| Method | Path | Body / params | Returns |
+|---|---|---|---|
+| GET | `/api/admin/regulatory-codes` | `q?` (matches externalId/title/summary/tags/section) | `RegulatoryCodeDto[]` |
+| POST | `/api/admin/regulatory-codes` | `RegulatoryCodeRequest` | created entry (409 if `externalId` exists) |
+| PUT | `/api/admin/regulatory-codes/{id}` | `RegulatoryCodeRequest` (`externalId` immutable) | updated entry |
+| DELETE | `/api/admin/regulatory-codes/{id}` | — | `204 No Content` |
+| POST | `/api/admin/regulatory-codes/import` | `RegulatoryCodeRequest[]` — bulk corpus drop | `{inserted, updated, unchanged, embedded, total}` |
+| POST | `/api/admin/regulatory-codes/sync` | — (re-sync from the bundled release corpus) | same sync-result shape |
+| GET | `/api/admin/regulatory-codes/status` | — | `{totalEntries, embeddedEntries, embeddingProvider, embeddingAvailable, schedulerEnabled, schedulerCron}` |
+
+`RegulatoryCodeRequest`: `{externalId*, jurisdiction, codeType, section, title*, summary, url, tags, version}`.
+
+A monthly scheduler (`KnowledgeRefreshScheduler`, `KB_SCHEDULER_ENABLED` / `KB_SCHEDULER_CRON`,
+default 04:00 on the 1st) re-runs sync + embedding backfill automatically (SOW §2.2.13). The
+backfill indexes sections into the pgvector `embedding` column via the optional TEI sidecar;
+knowledgebase retrieval degrades to lexical-only when the sidecar is absent.
+
 ---
 
 ## DTO field reference

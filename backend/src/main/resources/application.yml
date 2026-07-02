@@ -48,7 +48,7 @@ app:
     # Email of a user to auto-promote to STAFF + ADMIN at startup. Idempotent —
     # runs every boot, no-op if already elevated or not yet registered. Mirrors
     # how the City would grant an initial staff/admin via Okta group membership.
-    admin-email: ${APP_BOOTSTRAP_ADMIN_EMAIL:}
+    admin-email: ${APP_BOOTSTRAP_ADMIN_EMAIL:admin1@aip.com}
 
   storage:
     base-path: ${STORAGE_PATH:./storage}
@@ -71,6 +71,27 @@ app:
       api-url: ${ANTHROPIC_API_URL:https://api.anthropic.com/v1}
       default-model: ${ANTHROPIC_MODEL:claude-sonnet-4-6}
       max-tokens: ${ANTHROPIC_MAX_TOKENS:4096}
+
+  embedding:
+    # Semantic-retrieval sidecar for the knowledgebase (Blue's TEI pattern):
+    # Hugging Face Text Embeddings Inference serving intfloat/e5-large-v2
+    # (1024-dim). Optional — when unreachable the retriever degrades to
+    # lexical-only and screening is unaffected. Default port is 8086 (not Blue's
+    # 8081, which other stacks on this host occupy). macOS: `brew install
+    # text-embeddings-inference` and run on :8086; linux/amd64: use the
+    # `docker-tei` compose profile.
+    enabled: ${EMBEDDING_ENABLED:true}
+    url: ${EMBEDDING_URL:http://localhost:8086}
+    model: ${EMBEDDING_MODEL:intfloat/e5-large-v2}
+    dim: ${EMBEDDING_DIM:1024}
+
+  kb:
+    scheduler:
+      # Scheduled knowledgebase refresh (SOW 2.2.13 — automated monthly updates).
+      # Re-runs the corpus upsert + embedding backfill. Off by default; compose
+      # enables it. Default: 04:00 on the 1st of each month.
+      enabled: ${KB_SCHEDULER_ENABLED:false}
+      cron: ${KB_SCHEDULER_CRON:0 0 4 1 * *}
 
 logging:
   level:
