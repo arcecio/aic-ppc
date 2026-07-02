@@ -144,6 +144,7 @@ See [`docs/`](docs/):
 - `07-testing.md` — test strategy
 - `08-requirements-traceability.md` — RTM: requirement → implementation
 - `09-rbac-design.md` — production RBAC design (roles, scopes, maker-checker) — plan of record, not yet implemented
+- `10-cost-model.md` — Exhibit 5 cost-form fill-in guide (milestone weights, recurring lines, LLM COGS, T&M rate card)
 
 ## Repository layout
 
