@@ -1,0 +1,150 @@
+[
+  {
+    "code": "SFD_NEW",
+    "name": "New Single-Family Dwelling",
+    "category": "RESIDENTIAL",
+    "description": "Construction of a new detached single-family home.",
+    "formSchema": [
+      { "id": "stories", "label": "Number of stories", "type": "number", "required": true },
+      { "id": "squareFootage", "label": "Proposed floor area (sq ft)", "type": "number", "required": true },
+      { "id": "valuation", "label": "Estimated construction valuation ($)", "type": "number", "required": true },
+      { "id": "frontYardSetbackFt", "label": "Proposed front yard setback (ft)", "type": "number", "required": false },
+      { "id": "gradingCubicYards", "label": "Grading / earthwork (cubic yards)", "type": "number", "required": false, "showIf": "hillside" }
+    ],
+    "requiredDocs": [
+      { "docKey": "architectural_plans", "label": "Architectural plans", "required": true, "description": "Site plan, floor plans, elevations, sections." },
+      { "docKey": "structural_plans", "label": "Structural plans", "required": true },
+      { "docKey": "structural_calcs", "label": "Structural calculations", "required": true },
+      { "docKey": "title24_energy", "label": "Title 24 energy compliance forms", "required": true },
+      { "docKey": "soils_report", "label": "Geotechnical / soils report", "required": false, "description": "Required in hillside or hazard areas." },
+      { "docKey": "green_code", "label": "CALGreen checklist", "required": true }
+    ]
+  },
+  {
+    "code": "SFD_ADDITION",
+    "name": "Single-Family Addition / Remodel",
+    "category": "RESIDENTIAL",
+    "description": "Addition to or remodel of an existing single-family dwelling.",
+    "formSchema": [
+      { "id": "squareFootage", "label": "Added / remodeled area (sq ft)", "type": "number", "required": true },
+      { "id": "valuation", "label": "Estimated construction valuation ($)", "type": "number", "required": true },
+      { "id": "addsBedroom", "label": "Adds a bedroom?", "type": "boolean", "required": false }
+    ],
+    "requiredDocs": [
+      { "docKey": "architectural_plans", "label": "Architectural plans", "required": true },
+      { "docKey": "structural_plans", "label": "Structural plans", "required": false },
+      { "docKey": "title24_energy", "label": "Title 24 energy compliance forms", "required": true }
+    ]
+  },
+  {
+    "code": "ADU",
+    "name": "Accessory Dwelling Unit (ADU)",
+    "category": "RESIDENTIAL",
+    "description": "New or converted accessory dwelling unit.",
+    "formSchema": [
+      { "id": "aduType", "label": "ADU type", "type": "select", "options": ["Detached", "Attached", "Conversion", "Junior ADU"], "required": true },
+      { "id": "squareFootage", "label": "ADU floor area (sq ft)", "type": "number", "required": true },
+      { "id": "valuation", "label": "Estimated construction valuation ($)", "type": "number", "required": true }
+    ],
+    "requiredDocs": [
+      { "docKey": "architectural_plans", "label": "Architectural plans", "required": true },
+      { "docKey": "structural_plans", "label": "Structural plans", "required": false },
+      { "docKey": "title24_energy", "label": "Title 24 energy compliance forms", "required": true }
+    ]
+  },
+  {
+    "code": "MULTIFAMILY_NEW",
+    "name": "New Multi-Family Residential (5+ units)",
+    "category": "MULTI_FAMILY",
+    "description": "New multi-family residential building — an ED19 priority project type.",
+    "formSchema": [
+      { "id": "units", "label": "Number of dwelling units", "type": "number", "required": true },
+      { "id": "stories", "label": "Number of stories", "type": "number", "required": true },
+      { "id": "squareFootage", "label": "Gross building area (sq ft)", "type": "number", "required": true },
+      { "id": "valuation", "label": "Estimated construction valuation ($)", "type": "number", "required": true },
+      { "id": "includesAffordable", "label": "Includes affordable / density-bonus units?", "type": "boolean", "required": false },
+      { "id": "parkingSpaces", "label": "Proposed parking spaces", "type": "number", "required": false }
+    ],
+    "requiredDocs": [
+      { "docKey": "architectural_plans", "label": "Architectural plans", "required": true },
+      { "docKey": "structural_plans", "label": "Structural plans", "required": true },
+      { "docKey": "structural_calcs", "label": "Structural calculations", "required": true },
+      { "docKey": "title24_energy", "label": "Title 24 energy compliance forms", "required": true },
+      { "docKey": "green_code", "label": "CALGreen checklist", "required": true },
+      { "docKey": "soils_report", "label": "Geotechnical / soils report", "required": true },
+      { "docKey": "accessibility_plans", "label": "Accessibility (CBC 11B) plans", "required": true },
+      { "docKey": "site_survey", "label": "Site survey", "required": true }
+    ]
+  },
+  {
+    "code": "COMMERCIAL_NEW",
+    "name": "New Commercial Building",
+    "category": "COMMERCIAL",
+    "description": "New commercial construction — an ED19 priority project type.",
+    "formSchema": [
+      { "id": "occupancyGroup", "label": "Primary occupancy group", "type": "select", "options": ["A", "B", "M", "E", "F", "S", "H", "I"], "required": true },
+      { "id": "constructionType", "label": "Construction type", "type": "select", "options": ["I-A", "I-B", "II-A", "II-B", "III-A", "III-B", "IV", "V-A", "V-B"], "required": true },
+      { "id": "stories", "label": "Number of stories", "type": "number", "required": true },
+      { "id": "squareFootage", "label": "Gross building area (sq ft)", "type": "number", "required": true },
+      { "id": "valuation", "label": "Estimated construction valuation ($)", "type": "number", "required": true },
+      { "id": "occupantLoad", "label": "Estimated occupant load", "type": "number", "required": false }
+    ],
+    "requiredDocs": [
+      { "docKey": "architectural_plans", "label": "Architectural plans", "required": true },
+      { "docKey": "structural_plans", "label": "Structural plans", "required": true },
+      { "docKey": "structural_calcs", "label": "Structural calculations", "required": true },
+      { "docKey": "mep_plans", "label": "Mechanical / Electrical / Plumbing plans", "required": true },
+      { "docKey": "title24_energy", "label": "Title 24 energy compliance forms", "required": true },
+      { "docKey": "green_code", "label": "CALGreen checklist", "required": true },
+      { "docKey": "accessibility_plans", "label": "Accessibility (CBC 11B) plans", "required": true },
+      { "docKey": "soils_report", "label": "Geotechnical / soils report", "required": true },
+      { "docKey": "site_survey", "label": "Site survey", "required": true }
+    ]
+  },
+  {
+    "code": "COMMERCIAL_TI",
+    "name": "Commercial Tenant Improvement",
+    "category": "COMMERCIAL",
+    "description": "Interior tenant improvement of an existing commercial space.",
+    "formSchema": [
+      { "id": "occupancyGroup", "label": "Occupancy group", "type": "select", "options": ["A", "B", "M", "E", "F", "S"], "required": true },
+      { "id": "squareFootage", "label": "Improved area (sq ft)", "type": "number", "required": true },
+      { "id": "valuation", "label": "Estimated construction valuation ($)", "type": "number", "required": true },
+      { "id": "changeOfUse", "label": "Involves a change of use?", "type": "boolean", "required": false }
+    ],
+    "requiredDocs": [
+      { "docKey": "architectural_plans", "label": "Architectural plans", "required": true },
+      { "docKey": "mep_plans", "label": "Mechanical / Electrical / Plumbing plans", "required": true },
+      { "docKey": "title24_energy", "label": "Title 24 energy compliance forms", "required": true },
+      { "docKey": "accessibility_plans", "label": "Accessibility (CBC 11B) plans", "required": true }
+    ]
+  },
+  {
+    "code": "SIGN",
+    "name": "Sign Permit",
+    "category": "COMMERCIAL",
+    "description": "New or altered on-site sign.",
+    "formSchema": [
+      { "id": "signType", "label": "Sign type", "type": "select", "options": ["Wall", "Monument", "Pole", "Illuminated", "Digital"], "required": true },
+      { "id": "signAreaSqFt", "label": "Sign area (sq ft)", "type": "number", "required": true },
+      { "id": "valuation", "label": "Estimated valuation ($)", "type": "number", "required": false }
+    ],
+    "requiredDocs": [
+      { "docKey": "sign_plans", "label": "Sign plans & elevations", "required": true },
+      { "docKey": "structural_calcs", "label": "Structural calculations", "required": false }
+    ]
+  },
+  {
+    "code": "SOLAR_EV",
+    "name": "Solar PV / EV Charger (Express)",
+    "category": "RESIDENTIAL",
+    "description": "Rooftop solar photovoltaic system or electric-vehicle charger — typically an express permit.",
+    "formSchema": [
+      { "id": "systemType", "label": "System type", "type": "select", "options": ["Rooftop Solar PV", "EV Charger", "Battery Storage"], "required": true },
+      { "id": "valuation", "label": "Estimated valuation ($)", "type": "number", "required": false }
+    ],
+    "requiredDocs": [
+      { "docKey": "electrical_plans", "label": "Electrical / single-line diagram", "required": true }
+    ]
+  }
+]

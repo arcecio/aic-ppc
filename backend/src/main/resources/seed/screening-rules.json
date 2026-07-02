@@ -1,0 +1,480 @@
+[
+  {
+    "code": "ZON-SETBACK-FRONT",
+    "name": "Front yard setback below minimum",
+    "category": "ZONING",
+    "severity": "WARNING",
+    "condition": {
+      "all": [
+        { "field": "frontYardSetbackFt", "op": "lt", "value": 15 },
+        { "field": "zone", "op": "contains", "value": "R1" }
+      ]
+    },
+    "message": "The proposed front yard setback appears to be {{frontYardSetbackFt}} ft, but R1 zones ({{zone}}) generally require a 15 ft front yard (LAMC 12.08-C).",
+    "recommendation": "Increase the front yard setback to at least 15 ft, or provide documentation of an approved adjustment, variance, or averaging determination.",
+    "codeReference": "LAMC 12.08-C",
+    "codeUrl": "https://codelibrary.amlegal.com/codes/los_angeles/",
+    "confidence": 80,
+    "appliesToPermitTypes": "SFD_NEW,SFD_ADDITION,ADU",
+    "priority": 30
+  },
+  {
+    "code": "ZON-HEIGHT-STORIES",
+    "name": "Story count may exceed residential limit",
+    "category": "ZONING",
+    "severity": "WARNING",
+    "condition": {
+      "all": [
+        { "field": "permitCategory", "op": "in", "value": ["RESIDENTIAL"] },
+        { "field": "stories", "op": "gt", "value": 3 }
+      ]
+    },
+    "message": "The project proposes {{stories}} stories. Low-density residential zones are typically limited in height and stories (LAMC 12.21.1-A).",
+    "recommendation": "Confirm the applicable height district and maximum stories for zone {{zone}} and revise the design or apply for the appropriate entitlement.",
+    "codeReference": "LAMC 12.21.1-A",
+    "codeUrl": "https://codelibrary.amlegal.com/codes/los_angeles/",
+    "confidence": 65,
+    "appliesToPermitTypes": "SFD_NEW,SFD_ADDITION,ADU",
+    "priority": 40
+  },
+  {
+    "code": "ZON-HIGHRISE-REVIEW",
+    "name": "High-rise building triggers additional review",
+    "category": "BUILDING",
+    "severity": "WARNING",
+    "condition": {
+      "field": "stories",
+      "op": "gte",
+      "value": 7
+    },
+    "message": "The project proposes {{stories}} stories and may qualify as a high-rise building, triggering additional structural, fire, and life-safety review (Title 24 Part 2).",
+    "recommendation": "Coordinate early with LADBS and LAFD on high-rise requirements including smoke control, standpipes, emergency power, and fire command center.",
+    "codeReference": "Title 24 Part 2 Ch.4 (High-Rise)",
+    "codeUrl": "https://www.ladbs.org/",
+    "confidence": 85,
+    "appliesToPermitTypes": "MULTIFAMILY_NEW,COMMERCIAL_NEW",
+    "priority": 20
+  },
+  {
+    "code": "ZON-FAR-COVERAGE",
+    "name": "Floor area or lot coverage may be exceeded",
+    "category": "ZONING",
+    "severity": "INFORMATIONAL",
+    "condition": {
+      "all": [
+        { "field": "permitCategory", "op": "in", "value": ["RESIDENTIAL"] },
+        { "field": "squareFootage", "op": "gt", "value": 3200 }
+      ]
+    },
+    "message": "The proposed floor area of {{squareFootage}} sq ft is relatively large; verify compliance with residential floor area ratio and lot coverage limits (LAMC 12.21.1-B).",
+    "recommendation": "Provide a floor area and lot coverage calculation demonstrating compliance for the parcel size in zone {{zone}}.",
+    "codeReference": "LAMC 12.21.1-B",
+    "codeUrl": "https://codelibrary.amlegal.com/codes/los_angeles/",
+    "confidence": 55,
+    "appliesToPermitTypes": "SFD_NEW,SFD_ADDITION",
+    "priority": 60
+  },
+  {
+    "code": "ZON-HILLSIDE-GRADING",
+    "name": "Hillside grading standards apply",
+    "category": "ZONING",
+    "severity": "WARNING",
+    "condition": {
+      "all": [
+        { "field": "overlays", "op": "containsAny", "value": ["Hillside"] },
+        {
+          "any": [
+            { "field": "gradingCubicYards", "op": "exists" },
+            { "field": "text", "op": "containsAny", "value": ["grading", "excavation", "retaining wall", "cut and fill"] }
+          ]
+        }
+      ]
+    },
+    "message": "The parcel is within a Hillside Area and the project involves grading. Hillside grading, slope, and access standards apply (LAMC 12.21-C.10, LAMC 91.7006).",
+    "recommendation": "Provide a grading plan with cut/fill quantities, drainage and erosion control, and a soils/geology report, and confirm hillside access and floor area reductions.",
+    "codeReference": "LAMC 12.21-C.10 / 91.7006",
+    "codeUrl": "https://planning.lacity.org/",
+    "confidence": 80,
+    "appliesToPermitTypes": "SFD_NEW,SFD_ADDITION,ADU,MULTIFAMILY_NEW",
+    "priority": 25
+  },
+  {
+    "code": "FIRE-VHFHSZ",
+    "name": "Very High Fire Hazard Severity Zone requirements",
+    "category": "FIRE",
+    "severity": "WARNING",
+    "condition": {
+      "field": "overlays",
+      "op": "containsAny",
+      "value": ["Very High Fire Hazard Severity Zone"]
+    },
+    "message": "The parcel is within a Very High Fire Hazard Severity Zone. Ignition-resistant construction, ember-resistant venting, and defensible space are required (LAMC 57.322, WUI standards).",
+    "recommendation": "Detail Chapter 7A / WUI ignition-resistant materials, ember-resistant vents, and a brush clearance / defensible space plan, and coordinate LAFD brush clearance approval.",
+    "codeReference": "LAMC 57.322 / CBC Ch.7A",
+    "codeUrl": "https://www.ladbs.org/",
+    "confidence": 90,
+    "appliesToPermitTypes": "SFD_NEW,SFD_ADDITION,ADU,MULTIFAMILY_NEW,COMMERCIAL_NEW",
+    "priority": 20
+  },
+  {
+    "code": "HAZ-METHANE",
+    "name": "Methane mitigation required",
+    "category": "BUILDING",
+    "severity": "WARNING",
+    "condition": {
+      "field": "hazards",
+      "op": "containsAny",
+      "value": ["Methane"]
+    },
+    "message": "The parcel is within a Methane Zone or Methane Buffer Zone. A methane mitigation system is required (LAMC 91.7104).",
+    "recommendation": "Provide methane mitigation plans (membrane, sub-slab venting, gas detection) prepared by a qualified consultant and obtain LADBS Methane Mitigation review.",
+    "codeReference": "LAMC 91.7104",
+    "codeUrl": "https://www.ladbs.org/",
+    "confidence": 88,
+    "appliesToPermitTypes": "SFD_NEW,MULTIFAMILY_NEW,COMMERCIAL_NEW,COMMERCIAL_TI",
+    "priority": 25
+  },
+  {
+    "code": "HAZ-LIQUEFACTION-SOILS",
+    "name": "Soils report needed for liquefaction/landslide/hillside",
+    "category": "STRUCTURAL",
+    "severity": "WARNING",
+    "condition": {
+      "all": [
+        {
+          "any": [
+            { "field": "hazards", "op": "containsAny", "value": ["Liquefaction", "Landslide", "Fault"] },
+            { "field": "overlays", "op": "containsAny", "value": ["Hillside"] }
+          ]
+        },
+        { "field": "permitType", "op": "in", "value": ["SFD_NEW", "MULTIFAMILY_NEW", "COMMERCIAL_NEW"] }
+      ]
+    },
+    "message": "The site is in a seismic hazard or hillside area (hazards: {{hazards}}). A geotechnical/soils report is generally required (LAMC 91.7006, 91.1613).",
+    "recommendation": "Submit a geotechnical/soils report addressing liquefaction, landslide, or fault conditions and incorporate its recommendations into the foundation design.",
+    "codeReference": "LAMC 91.7006 / 91.1613",
+    "codeUrl": "https://www.ladbs.org/",
+    "confidence": 78,
+    "appliesToPermitTypes": "SFD_NEW,MULTIFAMILY_NEW,COMMERCIAL_NEW",
+    "priority": 30
+  },
+  {
+    "code": "COASTAL-CDP",
+    "name": "Coastal Development Permit likely required",
+    "category": "ZONING",
+    "severity": "BLOCKING",
+    "condition": {
+      "any": [
+        { "field": "overlays", "op": "containsAny", "value": ["Coastal Zone", "Specific Plan: Venice"] },
+        { "field": "text", "op": "containsAny", "value": ["coastal zone", "coastal development permit"] }
+      ]
+    },
+    "message": "The parcel appears to be within the Coastal Zone. A Coastal Development Permit is generally required before a building permit can be issued (Pub. Res. Code 30600).",
+    "recommendation": "Obtain a Coastal Development Permit (or Coastal Exemption) from City Planning and, where applicable, the California Coastal Commission prior to plan check clearance.",
+    "codeReference": "Pub. Res. Code 30600",
+    "codeUrl": "https://planning.lacity.org/",
+    "confidence": 82,
+    "appliesToPermitTypes": "*",
+    "priority": 15
+  },
+  {
+    "code": "HIST-HPOZ-REVIEW",
+    "name": "HPOZ historic review required",
+    "category": "ZONING",
+    "severity": "WARNING",
+    "condition": {
+      "field": "overlays",
+      "op": "containsAny",
+      "value": ["Historic Preservation Overlay Zone (HPOZ)"]
+    },
+    "message": "The parcel is within a Historic Preservation Overlay Zone (HPOZ). Exterior work, additions, new construction, or demolition require HPOZ design review (LAMC 12.20.3).",
+    "recommendation": "Submit for a Certificate of Appropriateness or Certificate of Compatibility and demonstrate consistency with the HPOZ preservation plan.",
+    "codeReference": "LAMC 12.20.3",
+    "codeUrl": "https://planning.lacity.org/",
+    "confidence": 84,
+    "appliesToPermitTypes": "SFD_NEW,SFD_ADDITION,ADU,MULTIFAMILY_NEW,COMMERCIAL_NEW,COMMERCIAL_TI,SIGN",
+    "priority": 25
+  },
+  {
+    "code": "PARK-AB2097-TRANSIT",
+    "name": "Parking minimums may not apply near transit",
+    "category": "ZONING",
+    "severity": "INFORMATIONAL",
+    "condition": {
+      "field": "overlays",
+      "op": "containsAny",
+      "value": ["Transit Priority Area", "Transit Oriented Communities Tier 3", "Transit Oriented Communities Tier 4"]
+    },
+    "message": "The parcel is near major transit ({{overlays}}). Under AB 2097, minimum automobile parking requirements generally may not be imposed within one-half mile of a major transit stop.",
+    "recommendation": "Confirm eligibility under AB 2097; you may reduce or eliminate off-street parking, though bicycle and accessible parking still apply.",
+    "codeReference": "Gov. Code 65863.2 (AB 2097)",
+    "codeUrl": "https://planning.lacity.org/",
+    "confidence": 70,
+    "appliesToPermitTypes": "MULTIFAMILY_NEW,COMMERCIAL_NEW,COMMERCIAL_TI",
+    "priority": 55
+  },
+  {
+    "code": "ZON-TOC-INCENTIVE",
+    "name": "TOC incentives available for affordable project",
+    "category": "ZONING",
+    "severity": "INFORMATIONAL",
+    "condition": {
+      "all": [
+        { "field": "overlays", "op": "containsAny", "value": ["Transit Oriented Communities Tier 3", "Transit Oriented Communities Tier 4"] },
+        { "field": "includesAffordable", "op": "eq", "value": true }
+      ]
+    },
+    "message": "The parcel is in a TOC area ({{overlays}}) and the project includes affordable housing. Density bonus, FAR, height, and parking incentives may be available (LAMC 12.22-A.31).",
+    "recommendation": "Consider filing a TOC application to obtain base incentives and additional on-menu/off-menu incentives commensurate with the affordability level.",
+    "codeReference": "LAMC 12.22-A.31",
+    "codeUrl": "https://planning.lacity.org/",
+    "confidence": 68,
+    "appliesToPermitTypes": "MULTIFAMILY_NEW",
+    "priority": 55
+  },
+  {
+    "code": "ACC-COMMERCIAL-ROUTE",
+    "name": "Accessibility documentation missing for commercial work",
+    "category": "ACCESSIBILITY",
+    "severity": "WARNING",
+    "condition": {
+      "all": [
+        { "field": "permitCategory", "op": "in", "value": ["COMMERCIAL"] },
+        { "not": { "field": "presentDocs", "op": "contains", "value": "accessibility_plans" } }
+      ]
+    },
+    "message": "This is a commercial project but no accessibility plans were identified. An accessible route, entrance, restrooms, and parking must be documented (CBC 11B-206, 11B-208, 11B-213).",
+    "recommendation": "Provide accessibility plans showing the accessible path of travel, accessible entrance, accessible parking, and accessible restrooms per CBC Chapter 11B.",
+    "codeReference": "CBC 11B-206 / 11B-213",
+    "codeUrl": "https://www.ladbs.org/",
+    "confidence": 72,
+    "appliesToPermitTypes": "COMMERCIAL_NEW,COMMERCIAL_TI",
+    "priority": 35
+  },
+  {
+    "code": "ACC-MULTIFAMILY-UNITS",
+    "name": "Multi-family accessibility requirements apply",
+    "category": "ACCESSIBILITY",
+    "severity": "WARNING",
+    "condition": {
+      "all": [
+        { "field": "permitCategory", "op": "in", "value": ["MULTI_FAMILY"] },
+        { "field": "units", "op": "gte", "value": 5 }
+      ]
+    },
+    "message": "The project has {{units}} dwelling units. Multi-family accessibility provisions (covered/adaptable units, accessible common areas, and path of travel) apply (CBC 11B / Chapter 11A).",
+    "recommendation": "Identify the required number of accessible/adaptable units and provide accessible common-use areas and an accessible route throughout the site.",
+    "codeReference": "CBC Chapter 11A / 11B",
+    "codeUrl": "https://www.ladbs.org/",
+    "confidence": 75,
+    "appliesToPermitTypes": "MULTIFAMILY_NEW",
+    "priority": 35
+  },
+  {
+    "code": "ACC-OCCLOAD-RESTROOM",
+    "name": "Large occupant load restroom/egress check",
+    "category": "ACCESSIBILITY",
+    "severity": "INFORMATIONAL",
+    "condition": {
+      "field": "occupantLoad",
+      "op": "gte",
+      "value": 50
+    },
+    "message": "The stated occupant load is {{occupantLoad}}. Verify egress capacity, exit count, and accessible restroom fixture counts for the assembly/business occupancy (CBC Ch.10, 11B-213).",
+    "recommendation": "Provide an occupant load and plumbing fixture calculation and confirm the number and arrangement of exits and accessible restrooms.",
+    "codeReference": "CBC Ch.10 / 11B-213",
+    "codeUrl": "https://www.ladbs.org/",
+    "confidence": 60,
+    "appliesToPermitTypes": "COMMERCIAL_NEW,COMMERCIAL_TI",
+    "priority": 45
+  },
+  {
+    "code": "GRN-CALGREEN-NEW",
+    "name": "CALGreen mandatory measures for new construction",
+    "category": "GREEN",
+    "severity": "WARNING",
+    "condition": {
+      "field": "permitType",
+      "op": "in",
+      "value": ["SFD_NEW", "MULTIFAMILY_NEW", "COMMERCIAL_NEW"]
+    },
+    "message": "New construction must comply with CALGreen mandatory measures including water efficiency, construction waste diversion, and EV readiness (Title 24 Part 11).",
+    "recommendation": "Provide a completed green code compliance document (green_code) and incorporate mandatory CALGreen measures into the plans.",
+    "codeReference": "Title 24 Part 11 (CALGreen)",
+    "codeUrl": "https://www.ladbs.org/",
+    "confidence": 80,
+    "appliesToPermitTypes": "SFD_NEW,MULTIFAMILY_NEW,COMMERCIAL_NEW",
+    "priority": 40
+  },
+  {
+    "code": "GRN-TITLE24-ENERGY",
+    "name": "Title 24 energy compliance expected",
+    "category": "GREEN",
+    "severity": "INFORMATIONAL",
+    "condition": {
+      "any": [
+        { "field": "permitType", "op": "in", "value": ["SFD_NEW", "SFD_ADDITION", "MULTIFAMILY_NEW", "COMMERCIAL_NEW", "COMMERCIAL_TI"] },
+        { "field": "text", "op": "containsAny", "value": ["hvac", "mechanical", "new conditioned space", "reroof", "windows"] }
+      ]
+    },
+    "message": "Work affecting the building envelope, HVAC, or lighting requires Title 24 energy compliance documentation (Title 24 Part 6).",
+    "recommendation": "Provide Title 24 energy compliance forms (title24_energy) signed by the responsible party.",
+    "codeReference": "Title 24 Part 6",
+    "codeUrl": "https://www.ladbs.org/",
+    "confidence": 62,
+    "appliesToPermitTypes": "SFD_NEW,SFD_ADDITION,MULTIFAMILY_NEW,COMMERCIAL_NEW,COMMERCIAL_TI",
+    "priority": 50
+  },
+  {
+    "code": "BLD-OCCUPANCY-CLASS",
+    "name": "Occupancy classification required for commercial",
+    "category": "BUILDING",
+    "severity": "WARNING",
+    "condition": {
+      "all": [
+        { "field": "permitCategory", "op": "in", "value": ["COMMERCIAL"] },
+        { "field": "occupancyGroup", "op": "missing" }
+      ]
+    },
+    "message": "No occupancy group classification was identified for this commercial project. Every building must be classified into an occupancy group (LAMC 91.403).",
+    "recommendation": "State the occupancy group(s) (e.g., B, M, A-2) on the plans and confirm allowable area and required separations for the construction type.",
+    "codeReference": "LAMC 91.403 / CBC Ch.3",
+    "codeUrl": "https://www.ladbs.org/",
+    "confidence": 70,
+    "appliesToPermitTypes": "COMMERCIAL_NEW,COMMERCIAL_TI",
+    "priority": 35
+  },
+  {
+    "code": "BLD-OCC-SEPARATION",
+    "name": "Mixed-occupancy separation check",
+    "category": "BUILDING",
+    "severity": "INFORMATIONAL",
+    "condition": {
+      "all": [
+        { "field": "permitCategory", "op": "in", "value": ["COMMERCIAL", "MULTI_FAMILY"] },
+        { "field": "text", "op": "containsAny", "value": ["mixed use", "mixed-use", "ground floor retail", "residential over", "live/work"] }
+      ]
+    },
+    "message": "The project appears to be mixed-use. Fire-resistance-rated occupancy separations between occupancy groups may be required (CBC 508, Title 24 Part 2 Ch.7).",
+    "recommendation": "Show occupancy separation ratings or justify nonseparated occupancies, and provide fire-rated assembly details.",
+    "codeReference": "CBC 508 / Title 24 Part 2 Ch.7",
+    "codeUrl": "https://www.ladbs.org/",
+    "confidence": 58,
+    "appliesToPermitTypes": "MULTIFAMILY_NEW,COMMERCIAL_NEW,COMMERCIAL_TI",
+    "priority": 50
+  },
+  {
+    "code": "BLD-CONSTR-TYPE-AREA",
+    "name": "Construction type and allowable area verification",
+    "category": "BUILDING",
+    "severity": "INFORMATIONAL",
+    "condition": {
+      "all": [
+        { "field": "permitType", "op": "in", "value": ["MULTIFAMILY_NEW", "COMMERCIAL_NEW"] },
+        { "field": "squareFootage", "op": "gt", "value": 5000 }
+      ]
+    },
+    "message": "At {{squareFootage}} sq ft, confirm the building's construction type supports the allowable height and area for the proposed occupancy (Title 24 Part 2 Ch.5).",
+    "recommendation": "Provide an allowable area analysis including frontage and sprinkler increases and confirm the construction type on the plans.",
+    "codeReference": "Title 24 Part 2 Ch.5",
+    "codeUrl": "https://www.ladbs.org/",
+    "confidence": 60,
+    "appliesToPermitTypes": "MULTIFAMILY_NEW,COMMERCIAL_NEW",
+    "priority": 50
+  },
+  {
+    "code": "SIGN-AREA-LIMIT",
+    "name": "Sign area exceeds typical limit",
+    "category": "ZONING",
+    "severity": "WARNING",
+    "condition": {
+      "all": [
+        { "field": "permitType", "op": "eq", "value": "SIGN" },
+        { "field": "signAreaSqFt", "op": "gt", "value": 150 }
+      ]
+    },
+    "message": "The proposed sign area is {{signAreaSqFt}} sq ft, which exceeds typical on-site sign area allowances and may require a sign adjustment or sign district approval (LAMC 14.4.4).",
+    "recommendation": "Confirm the maximum permitted sign area for zone {{zone}}, reduce the sign area, or pursue a sign adjustment/sign district entitlement.",
+    "codeReference": "LAMC 14.4.4",
+    "codeUrl": "https://codelibrary.amlegal.com/codes/los_angeles/",
+    "confidence": 76,
+    "appliesToPermitTypes": "SIGN",
+    "priority": 40
+  },
+  {
+    "code": "SIGN-DIGITAL-OFFSITE",
+    "name": "Digital or off-site sign restrictions",
+    "category": "ZONING",
+    "severity": "INFORMATIONAL",
+    "condition": {
+      "all": [
+        { "field": "permitType", "op": "eq", "value": "SIGN" },
+        { "field": "text", "op": "containsAny", "value": ["digital", "electronic", "led", "billboard", "off-site", "off site"] }
+      ]
+    },
+    "message": "The sign appears to be digital or off-site. Such signs are generally prohibited outside designated sign districts (LAMC 14.4.4).",
+    "recommendation": "Verify whether the parcel is within an approved sign district; otherwise revise to a permitted on-site static sign.",
+    "codeReference": "LAMC 14.4.4",
+    "codeUrl": "https://codelibrary.amlegal.com/codes/los_angeles/",
+    "confidence": 64,
+    "appliesToPermitTypes": "SIGN",
+    "priority": 45
+  },
+  {
+    "code": "ZON-CHANGE-OF-USE",
+    "name": "Change of use may trigger zoning and code review",
+    "category": "ZONING",
+    "severity": "WARNING",
+    "condition": {
+      "any": [
+        { "field": "changeOfUse", "op": "eq", "value": true },
+        { "field": "text", "op": "containsAny", "value": ["change of use", "change in use", "convert to"] }
+      ]
+    },
+    "message": "The project involves a change of use. Verify the new use is permitted in zone {{zone}} and reassess parking, occupancy, accessibility, and CALGreen requirements (LAMC 12.14-C).",
+    "recommendation": "Confirm use permissibility (or obtain a CUP), and provide updated occupancy, parking, and accessibility analyses for the new use.",
+    "codeReference": "LAMC 12.14-C / 12.24",
+    "codeUrl": "https://codelibrary.amlegal.com/codes/los_angeles/",
+    "confidence": 68,
+    "appliesToPermitTypes": "COMMERCIAL_TI,COMMERCIAL_NEW",
+    "priority": 40
+  },
+  {
+    "code": "STR-CALCS-EXPECTED",
+    "name": "Structural calculations expected",
+    "category": "STRUCTURAL",
+    "severity": "INFORMATIONAL",
+    "condition": {
+      "all": [
+        { "field": "permitType", "op": "in", "value": ["SFD_NEW", "MULTIFAMILY_NEW", "COMMERCIAL_NEW"] },
+        { "not": { "field": "presentDocs", "op": "contains", "value": "structural_calcs" } }
+      ]
+    },
+    "message": "No structural calculations were identified for this new construction. Seismic and gravity design calculations are typically required (LAMC 91.1613).",
+    "recommendation": "Provide stamped structural calculations and plans consistent with the adopted seismic design provisions.",
+    "codeReference": "LAMC 91.1613",
+    "codeUrl": "https://www.ladbs.org/",
+    "confidence": 60,
+    "appliesToPermitTypes": "SFD_NEW,MULTIFAMILY_NEW,COMMERCIAL_NEW",
+    "priority": 50
+  },
+  {
+    "code": "ELE-EV-READY",
+    "name": "EV charging readiness for new parking",
+    "category": "ELECTRICAL",
+    "severity": "INFORMATIONAL",
+    "condition": {
+      "all": [
+        { "field": "permitType", "op": "in", "value": ["MULTIFAMILY_NEW", "COMMERCIAL_NEW"] },
+        { "field": "parkingSpaces", "op": "gte", "value": 5 }
+      ]
+    },
+    "message": "New parking facilities with {{parkingSpaces}} spaces must provide EV-capable/EV-ready infrastructure and charging stations (CALGreen, LAMC 93.0413).",
+    "recommendation": "Show EV-capable, EV-ready, and EVSE-installed spaces on the electrical and site plans per the applicable ratio.",
+    "codeReference": "LAMC 93.0413 / Title 24 Part 11",
+    "codeUrl": "https://www.ladbs.org/",
+    "confidence": 66,
+    "appliesToPermitTypes": "MULTIFAMILY_NEW,COMMERCIAL_NEW",
+    "priority": 55
+  }
+]

@@ -1,0 +1,339 @@
+[
+  {
+    "code": "CLR-PLANNING-ENTITLEMENT",
+    "department": "CITY_PLANNING",
+    "clearanceName": "City Planning — Zoning / Entitlement Clearance",
+    "condition": {
+      "any": [
+        { "field": "overlays", "op": "containsAny", "value": ["Q Condition", "Specific Plan: Venice", "Historic Preservation Overlay Zone (HPOZ)"] },
+        { "field": "text", "op": "containsAny", "value": ["conditional use", "variance", "adjustment", "specific plan", "entitlement", "site plan review"] },
+        { "field": "changeOfUse", "op": "eq", "value": true }
+      ]
+    },
+    "reason": "Discretionary actions, overlays, or change of use in zone {{zone}} typically require a zoning/entitlement clearance from City Planning before permit issuance (LAMC 12.24).",
+    "submittalRequirements": [
+      "Zoning conformance / entitlement application",
+      "Radius map and legal description",
+      "Site, floor, and elevation plans",
+      "Findings supporting the requested action"
+    ],
+    "infoUrl": "https://planning.lacity.org/",
+    "confidence": 72,
+    "appliesToPermitTypes": "*",
+    "priority": 20
+  },
+  {
+    "code": "CLR-PLANNING-COASTAL",
+    "department": "CITY_PLANNING",
+    "clearanceName": "City Planning — Coastal Development Permit",
+    "condition": {
+      "any": [
+        { "field": "overlays", "op": "containsAny", "value": ["Coastal Zone", "Specific Plan: Venice"] },
+        { "field": "text", "op": "containsAny", "value": ["coastal zone", "coastal development permit"] }
+      ]
+    },
+    "reason": "Development within the Coastal Zone requires a Coastal Development Permit or Coastal Exemption from City Planning (Pub. Res. Code 30600).",
+    "submittalRequirements": [
+      "Coastal Development Permit / Exemption application",
+      "Site plan and elevations showing bulk and height",
+      "Public access and coastal resources analysis"
+    ],
+    "infoUrl": "https://planning.lacity.org/",
+    "confidence": 80,
+    "appliesToPermitTypes": "*",
+    "priority": 15
+  },
+  {
+    "code": "CLR-PLANNING-HPOZ",
+    "department": "CITY_PLANNING",
+    "clearanceName": "City Planning — HPOZ Historic Review",
+    "condition": {
+      "field": "overlays",
+      "op": "containsAny",
+      "value": ["Historic Preservation Overlay Zone (HPOZ)"]
+    },
+    "reason": "Work within a Historic Preservation Overlay Zone requires HPOZ review and a Certificate of Appropriateness or Compatibility (LAMC 12.20.3).",
+    "submittalRequirements": [
+      "Certificate of Appropriateness / Compatibility application",
+      "Historic photographs and existing conditions",
+      "Material and detail specifications for exterior work"
+    ],
+    "infoUrl": "https://planning.lacity.org/",
+    "confidence": 82,
+    "appliesToPermitTypes": "SFD_NEW,SFD_ADDITION,ADU,MULTIFAMILY_NEW,COMMERCIAL_NEW,COMMERCIAL_TI,SIGN",
+    "priority": 20
+  },
+  {
+    "code": "CLR-PLANNING-DENSITY-TOC",
+    "department": "CITY_PLANNING",
+    "clearanceName": "City Planning — Density Bonus / TOC Clearance",
+    "condition": {
+      "all": [
+        { "field": "permitCategory", "op": "in", "value": ["MULTI_FAMILY"] },
+        {
+          "any": [
+            { "field": "includesAffordable", "op": "eq", "value": true },
+            { "field": "overlays", "op": "containsAny", "value": ["Transit Oriented Communities Tier 3", "Transit Oriented Communities Tier 4"] }
+          ]
+        }
+      ]
+    },
+    "reason": "Projects using Density Bonus or TOC incentives require a City Planning determination confirming eligibility and approved incentives (LAMC 12.22-A.25/A.31).",
+    "submittalRequirements": [
+      "Density Bonus / TOC application",
+      "Affordable housing covenant commitment",
+      "Menu of requested incentives with justification"
+    ],
+    "infoUrl": "https://planning.lacity.org/",
+    "confidence": 74,
+    "appliesToPermitTypes": "MULTIFAMILY_NEW",
+    "priority": 25
+  },
+  {
+    "code": "CLR-LAFD-LIFE-SAFETY",
+    "department": "LAFD",
+    "clearanceName": "LAFD — Fire / Life Safety Review",
+    "condition": {
+      "any": [
+        { "field": "permitCategory", "op": "in", "value": ["COMMERCIAL", "MULTI_FAMILY"] },
+        { "field": "stories", "op": "gte", "value": 7 },
+        { "field": "text", "op": "containsAny", "value": ["assembly", "high-rise", "high rise", "sprinkler", "fire alarm", "standpipe"] }
+      ]
+    },
+    "reason": "Commercial, multi-family, or high-rise projects ({{stories}} stories) require LAFD review of access, water supply, sprinklers, and alarms.",
+    "submittalRequirements": [
+      "Fire access and hydrant/water supply plan",
+      "Sprinkler and fire alarm design basis",
+      "Occupancy and egress summary"
+    ],
+    "infoUrl": "https://lafd.org/",
+    "confidence": 76,
+    "appliesToPermitTypes": "MULTIFAMILY_NEW,COMMERCIAL_NEW,COMMERCIAL_TI",
+    "priority": 25
+  },
+  {
+    "code": "CLR-LAFD-HAZMAT",
+    "department": "LAFD",
+    "clearanceName": "LAFD — Hazardous Materials / Brush Clearance",
+    "condition": {
+      "any": [
+        { "field": "overlays", "op": "containsAny", "value": ["Very High Fire Hazard Severity Zone"] },
+        { "field": "hazards", "op": "containsAny", "value": ["Methane"] },
+        { "field": "text", "op": "containsAny", "value": ["hazardous materials", "flammable", "brush clearance", "defensible space", "aboveground storage tank"] }
+      ]
+    },
+    "reason": "The project involves fire hazard conditions (VHFHSZ, methane, or hazardous materials) requiring LAFD brush clearance or hazardous materials review.",
+    "submittalRequirements": [
+      "Brush clearance / defensible space plan",
+      "Hazardous materials inventory (if applicable)",
+      "Methane or vapor mitigation coordination (if applicable)"
+    ],
+    "infoUrl": "https://lafd.org/",
+    "confidence": 78,
+    "appliesToPermitTypes": "*",
+    "priority": 25
+  },
+  {
+    "code": "CLR-BOE-ROW",
+    "department": "BOE",
+    "clearanceName": "Bureau of Engineering — Public Right-of-Way / B-Permit",
+    "condition": {
+      "any": [
+        { "field": "text", "op": "containsAny", "value": ["driveway", "curb", "sidewalk", "street", "right-of-way", "right of way", "dedication", "curb cut"] },
+        { "field": "permitCategory", "op": "in", "value": ["COMMERCIAL", "MULTI_FAMILY"] }
+      ]
+    },
+    "reason": "Work affecting the public right-of-way (driveways, curb/sidewalk, dedications) typically requires a Bureau of Engineering clearance.",
+    "submittalRequirements": [
+      "Site plan showing right-of-way improvements",
+      "Survey / legal description",
+      "B-Permit application"
+    ],
+    "infoUrl": "https://eng.lacity.org/",
+    "confidence": 70,
+    "appliesToPermitTypes": "*",
+    "priority": 60
+  },
+  {
+    "code": "CLR-BOE-SEWER",
+    "department": "BOE",
+    "clearanceName": "Bureau of Engineering — Sewer Availability / Connection",
+    "condition": {
+      "any": [
+        { "field": "permitType", "op": "in", "value": ["MULTIFAMILY_NEW", "COMMERCIAL_NEW", "SFD_NEW", "ADU"] },
+        { "field": "text", "op": "containsAny", "value": ["sewer", "sanitary connection", "septic", "new plumbing fixtures"] }
+      ]
+    },
+    "reason": "New construction or added plumbing fixtures require confirmation of sewer availability and a sewer connection/capacity clearance from the Bureau of Engineering.",
+    "submittalRequirements": [
+      "Sewer availability / connection application",
+      "Plumbing fixture count and flow estimate",
+      "Site utility plan"
+    ],
+    "infoUrl": "https://eng.lacity.org/",
+    "confidence": 65,
+    "appliesToPermitTypes": "SFD_NEW,ADU,MULTIFAMILY_NEW,COMMERCIAL_NEW",
+    "priority": 55
+  },
+  {
+    "code": "CLR-BOS-SWPPP-LID",
+    "department": "BOS",
+    "clearanceName": "Bureau of Sanitation — Stormwater / SWPPP / LID",
+    "condition": {
+      "any": [
+        { "field": "gradingCubicYards", "op": "gte", "value": 500 },
+        { "field": "squareFootage", "op": "gte", "value": 10000 },
+        { "field": "permitType", "op": "in", "value": ["MULTIFAMILY_NEW", "COMMERCIAL_NEW"] },
+        { "field": "text", "op": "containsAny", "value": ["stormwater", "swppp", "low impact development", "lid", "grading", "impervious"] }
+      ]
+    },
+    "reason": "Projects with significant grading, new impervious area, or development scale must satisfy Bureau of Sanitation stormwater (SWPPP) and Low Impact Development requirements.",
+    "submittalRequirements": [
+      "Low Impact Development (LID) plan",
+      "SWPPP / erosion and sediment control plan",
+      "Stormwater best management practices summary"
+    ],
+    "infoUrl": "https://lacitysan.org/",
+    "confidence": 68,
+    "appliesToPermitTypes": "SFD_NEW,MULTIFAMILY_NEW,COMMERCIAL_NEW",
+    "priority": 50
+  },
+  {
+    "code": "CLR-BSS-STREET-TREE",
+    "department": "BSS",
+    "clearanceName": "Bureau of Street Services — Street Tree / Street Use",
+    "condition": {
+      "any": [
+        { "field": "text", "op": "containsAny", "value": ["street tree", "tree removal", "parkway", "street use", "temporary use of public space", "scaffold"] },
+        { "field": "permitCategory", "op": "in", "value": ["COMMERCIAL", "MULTI_FAMILY"] }
+      ]
+    },
+    "reason": "Removal or protection of street trees, parkway work, or use of the public way requires a Bureau of Street Services (StreetsLA) clearance or permit.",
+    "submittalRequirements": [
+      "Street tree / parkway plan",
+      "Tree protection or replacement plan",
+      "Street use / revocable permit application (if applicable)"
+    ],
+    "infoUrl": "https://streetsla.lacity.org/",
+    "confidence": 60,
+    "appliesToPermitTypes": "*",
+    "priority": 65
+  },
+  {
+    "code": "CLR-BCA-PREVAILING-WAGE",
+    "department": "BCA",
+    "clearanceName": "Bureau of Contract Administration — Public Works / Prevailing Wage",
+    "condition": {
+      "all": [
+        { "field": "permitCategory", "op": "in", "value": ["MULTI_FAMILY"] },
+        { "field": "includesAffordable", "op": "eq", "value": true }
+      ]
+    },
+    "reason": "Affordable housing projects receiving public assistance may be subject to prevailing wage and labor compliance monitoring by the Bureau of Contract Administration.",
+    "submittalRequirements": [
+      "Project labor / prevailing wage determination request",
+      "Affordable housing funding documentation",
+      "Contractor compliance registration"
+    ],
+    "infoUrl": "https://bca.lacity.org/",
+    "confidence": 55,
+    "appliesToPermitTypes": "MULTIFAMILY_NEW",
+    "priority": 70
+  },
+  {
+    "code": "CLR-LAHD-RSO",
+    "department": "LAHD",
+    "clearanceName": "LA Housing Department — Rent Stabilization / Housing Clearance",
+    "condition": {
+      "any": [
+        { "field": "text", "op": "containsAny", "value": ["demolition of dwelling", "remove dwelling unit", "rent stabilized", "rso", "ellis act", "tenant"] },
+        {
+          "all": [
+            { "field": "permitCategory", "op": "in", "value": ["MULTI_FAMILY"] },
+            { "field": "changeOfUse", "op": "eq", "value": true }
+          ]
+        }
+      ]
+    },
+    "reason": "Demolition, removal, or conversion of residential units may be subject to Rent Stabilization Ordinance and requires an LA Housing Department clearance.",
+    "submittalRequirements": [
+      "RSO / housing replacement determination request",
+      "Existing unit count and tenancy status",
+      "Relocation / notice compliance documentation"
+    ],
+    "infoUrl": "https://housing.lacity.org/",
+    "confidence": 64,
+    "appliesToPermitTypes": "MULTIFAMILY_NEW,COMMERCIAL_TI",
+    "priority": 45
+  },
+  {
+    "code": "CLR-LADWP-WATER-POWER",
+    "department": "LADWP",
+    "clearanceName": "LADWP — Water & Power Service / Water Quality",
+    "condition": {
+      "any": [
+        { "field": "permitType", "op": "in", "value": ["MULTIFAMILY_NEW", "COMMERCIAL_NEW", "SFD_NEW", "SOLAR_EV"] },
+        { "field": "text", "op": "containsAny", "value": ["water meter", "electrical service", "new service", "backflow", "fire flow", "solar", "battery storage"] }
+      ]
+    },
+    "reason": "New or upgraded water and electrical service, fire flow, or backflow protection requires LADWP service and water quality clearance.",
+    "submittalRequirements": [
+      "Water and/or electrical service application",
+      "Load / demand calculation",
+      "Backflow prevention and fire flow information (if applicable)"
+    ],
+    "infoUrl": "https://www.ladwp.com/",
+    "confidence": 66,
+    "appliesToPermitTypes": "SFD_NEW,MULTIFAMILY_NEW,COMMERCIAL_NEW,SOLAR_EV",
+    "priority": 50
+  },
+  {
+    "code": "CLR-DOT-DRIVEWAY-TRAFFIC",
+    "department": "DOT",
+    "clearanceName": "LADOT — Transportation / Driveway / Traffic Review",
+    "condition": {
+      "any": [
+        { "field": "text", "op": "containsAny", "value": ["driveway", "curb cut", "loading", "traffic study", "vehicle access", "parking layout", "valet"] },
+        {
+          "all": [
+            { "field": "permitCategory", "op": "in", "value": ["COMMERCIAL", "MULTI_FAMILY"] },
+            { "field": "parkingSpaces", "op": "gte", "value": 10 }
+          ]
+        }
+      ]
+    },
+    "reason": "Driveway/curb-cut design, vehicle access, and larger parking facilities require LADOT review, and larger projects may require a traffic assessment.",
+    "submittalRequirements": [
+      "Driveway and parking layout plan",
+      "Vehicle circulation / turning analysis",
+      "Traffic assessment (if triggered by project size)"
+    ],
+    "infoUrl": "https://ladot.lacity.org/",
+    "confidence": 63,
+    "appliesToPermitTypes": "MULTIFAMILY_NEW,COMMERCIAL_NEW,COMMERCIAL_TI",
+    "priority": 55
+  },
+  {
+    "code": "CLR-LADBS-GRADING",
+    "department": "LADBS",
+    "clearanceName": "LADBS — Grading / Geology Clearance",
+    "condition": {
+      "any": [
+        { "field": "overlays", "op": "containsAny", "value": ["Hillside"] },
+        { "field": "hazards", "op": "containsAny", "value": ["Liquefaction", "Landslide", "Fault"] },
+        { "field": "gradingCubicYards", "op": "gte", "value": 50 },
+        { "field": "text", "op": "containsAny", "value": ["grading", "retaining wall", "shoring", "excavation"] }
+      ]
+    },
+    "reason": "Hillside conditions, seismic hazards, or grading quantities ({{gradingCubicYards}} cy) require LADBS Grading Division review of soils/geology and grading plans (LAMC 91.7006).",
+    "submittalRequirements": [
+      "Grading plan with cut/fill quantities and drainage",
+      "Geotechnical / soils and geology report",
+      "Erosion control and haul route plan"
+    ],
+    "infoUrl": "https://www.ladbs.org/",
+    "confidence": 74,
+    "appliesToPermitTypes": "SFD_NEW,SFD_ADDITION,ADU,MULTIFAMILY_NEW,COMMERCIAL_NEW",
+    "priority": 30
+  }
+]

@@ -1,0 +1,66 @@
+version: '3.9'
+
+# AI-Powered Pre-Plan Check Assistant (AIP PPC) — City of Los Angeles / LADBS
+# RFP 2025AIP007. Full stack runs on Colima (Docker) just like the Blue reference:
+# Postgres + Spring Boot backend + React/nginx frontend.
+#
+# Ports are offset from the Blue/munch stacks that may already be running on the
+# same Colima VM (5432/5433, 8080/8081, 80/8090) so this stack can coexist.
+
+services:
+  postgres:
+    build:
+      context: ./backend/docker/postgres
+    container_name: aip-ppc-postgres
+    environment:
+      POSTGRES_DB: aipppc
+      POSTGRES_USER: aipppc
+      POSTGRES_PASSWORD: aipppc
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aipppc"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: aip-ppc-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/aipppc
+      DB_USER: aipppc
+      DB_PASS: aipppc
+      JWT_SECRET: change-me-in-production-minimum-256-bits-long-secret-key-for-aip-ppc
+      # Anthropic Claude powers the AI-assisted analysis arm. Optional: when
+      # unset the engine runs rules-only and the AI provider degrades to a
+      # deterministic heuristic (see docs/05-ai-and-governance.md).
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      STORAGE_PATH: /app/storage
+      # Email auto-promoted to STAFF+ADMIN on boot so a fresh DB isn't locked out.
+      APP_BOOTSTRAP_ADMIN_EMAIL: ${APP_BOOTSTRAP_ADMIN_EMAIL:-admin@lacity.gov}
+    ports:
+      - "8082:8080"
+    volumes:
+      - storage_data:/app/storage
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: aip-ppc-frontend
+    depends_on:
+      - backend
+    ports:
+      - "8095:80"
+
+volumes:
+  postgres_data:
+  storage_data:

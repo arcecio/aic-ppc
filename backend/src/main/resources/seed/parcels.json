@@ -1,0 +1,68 @@
+[
+  {
+    "apn": "5144-025-013",
+    "address": "201 N Figueroa St, Los Angeles, CA 90012",
+    "zone": "C2-4D",
+    "generalPlanLandUse": "Regional Center Commercial",
+    "overlays": ["Downtown Design District", "Transit Priority Area"],
+    "hazardZones": ["Liquefaction"],
+    "councilDistrict": 1,
+    "communityPlanArea": "Central City",
+    "latitude": 34.0618, "longitude": -118.2468
+  },
+  {
+    "apn": "5426-018-004",
+    "address": "1234 Rimpau Blvd, Los Angeles, CA 90019",
+    "zone": "R1-1",
+    "generalPlanLandUse": "Low Residential",
+    "overlays": [],
+    "hazardZones": [],
+    "councilDistrict": 10,
+    "communityPlanArea": "Wilshire",
+    "latitude": 34.0498, "longitude": -118.3437
+  },
+  {
+    "apn": "5567-011-022",
+    "address": "8080 Mulholland Dr, Los Angeles, CA 90046",
+    "zone": "RE15-1-H",
+    "generalPlanLandUse": "Minimum Residential",
+    "overlays": ["Hillside", "Very High Fire Hazard Severity Zone"],
+    "hazardZones": ["Fault", "Very High Fire Hazard Severity Zone", "Landslide"],
+    "councilDistrict": 4,
+    "communityPlanArea": "Hollywood",
+    "latitude": 34.1258, "longitude": -118.3712
+  },
+  {
+    "apn": "4292-006-018",
+    "address": "500 Ocean Front Walk, Venice, CA 90291",
+    "zone": "C1-1",
+    "generalPlanLandUse": "Neighborhood Commercial",
+    "overlays": ["Coastal Zone", "Specific Plan: Venice", "Dual Permit Jurisdiction (Coastal)"],
+    "hazardZones": ["Liquefaction", "Tsunami Inundation"],
+    "councilDistrict": 11,
+    "communityPlanArea": "Venice",
+    "latitude": 33.9850, "longitude": -118.4695
+  },
+  {
+    "apn": "2345-019-007",
+    "address": "6100 Laurel Canyon Blvd, North Hollywood, CA 91606",
+    "zone": "[Q]C2-1VL",
+    "generalPlanLandUse": "Community Commercial",
+    "overlays": ["Q Condition", "Transit Oriented Communities Tier 3"],
+    "hazardZones": ["Methane", "Liquefaction"],
+    "councilDistrict": 2,
+    "communityPlanArea": "North Hollywood - Valley Village",
+    "latitude": 34.1785, "longitude": -118.3960
+  },
+  {
+    "apn": "5077-014-031",
+    "address": "3550 Wilshire Blvd, Los Angeles, CA 90010",
+    "zone": "R5-4",
+    "generalPlanLandUse": "High Residential",
+    "overlays": ["Transit Oriented Communities Tier 4", "Historic Preservation Overlay Zone (HPOZ)"],
+    "hazardZones": ["Methane", "Liquefaction"],
+    "councilDistrict": 10,
+    "communityPlanArea": "Wilshire",
+    "latitude": 34.0619, "longitude": -118.3005
+  }
+]
