@@ -56,7 +56,8 @@ public class RuleAdminService {
         rule.setCode(req.code());
         applyScreening(rule, req);
         screeningRules.save(rule);
-        auditService.recordUser(staff.getEmail(), "RULE_CREATED", "ScreeningRule", rule.getId().toString(), req.code());
+        auditService.recordUser(staff.getEmail(), "RULE_CREATED", "ScreeningRule", rule.getId().toString(),
+            req.code(), null, ScreeningRuleDto.from(rule));
         return rule;
     }
 
@@ -65,9 +66,11 @@ public class RuleAdminService {
         ScreeningRule rule = screeningRules.findById(id)
             .orElseThrow(() -> ApiException.notFound("Screening rule not found"));
         validateCondition(req.conditionJson());
+        ScreeningRuleDto before = ScreeningRuleDto.from(rule);
         applyScreening(rule, req);
         screeningRules.save(rule);
-        auditService.recordUser(staff.getEmail(), "RULE_UPDATED", "ScreeningRule", id.toString(), rule.getCode());
+        auditService.recordUser(staff.getEmail(), "RULE_UPDATED", "ScreeningRule", id.toString(),
+            rule.getCode(), before, ScreeningRuleDto.from(rule));
         return rule;
     }
 
@@ -75,8 +78,10 @@ public class RuleAdminService {
     public void deleteScreeningRule(User staff, UUID id) {
         ScreeningRule rule = screeningRules.findById(id)
             .orElseThrow(() -> ApiException.notFound("Screening rule not found"));
+        ScreeningRuleDto before = ScreeningRuleDto.from(rule);
         screeningRules.delete(rule);
-        auditService.recordUser(staff.getEmail(), "RULE_DELETED", "ScreeningRule", id.toString(), rule.getCode());
+        auditService.recordUser(staff.getEmail(), "RULE_DELETED", "ScreeningRule", id.toString(),
+            rule.getCode(), before, null);
     }
 
     private void applyScreening(ScreeningRule rule, ScreeningRuleRequest req) {
@@ -110,7 +115,7 @@ public class RuleAdminService {
         applyClearance(rule, req);
         clearanceRules.save(rule);
         auditService.recordUser(staff.getEmail(), "CLEARANCE_RULE_CREATED", "ClearanceRule",
-            rule.getId().toString(), req.code());
+            rule.getId().toString(), req.code(), null, ClearanceRuleDto.from(rule));
         return rule;
     }
 
@@ -119,10 +124,11 @@ public class RuleAdminService {
         ClearanceRule rule = clearanceRules.findById(id)
             .orElseThrow(() -> ApiException.notFound("Clearance rule not found"));
         validateCondition(req.conditionJson());
+        ClearanceRuleDto before = ClearanceRuleDto.from(rule);
         applyClearance(rule, req);
         clearanceRules.save(rule);
         auditService.recordUser(staff.getEmail(), "CLEARANCE_RULE_UPDATED", "ClearanceRule",
-            id.toString(), rule.getCode());
+            id.toString(), rule.getCode(), before, ClearanceRuleDto.from(rule));
         return rule;
     }
 
@@ -130,9 +136,10 @@ public class RuleAdminService {
     public void deleteClearanceRule(User staff, UUID id) {
         ClearanceRule rule = clearanceRules.findById(id)
             .orElseThrow(() -> ApiException.notFound("Clearance rule not found"));
+        ClearanceRuleDto before = ClearanceRuleDto.from(rule);
         clearanceRules.delete(rule);
         auditService.recordUser(staff.getEmail(), "CLEARANCE_RULE_DELETED", "ClearanceRule",
-            id.toString(), rule.getCode());
+            id.toString(), rule.getCode(), before, null);
     }
 
     private void applyClearance(ClearanceRule rule, ClearanceRuleRequest req) {

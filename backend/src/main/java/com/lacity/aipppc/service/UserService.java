@@ -7,6 +7,7 @@ import com.lacity.aipppc.repository.UserRepository;
 import com.lacity.aipppc.security.JwtUtil;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,17 +22,20 @@ public class UserService {
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
     private final UserDetailsService userDetailsService;
+    private final AuditService auditService;
 
     public UserService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
                        JwtUtil jwtUtil,
                        AuthenticationManager authenticationManager,
-                       UserDetailsService userDetailsService) {
+                       UserDetailsService userDetailsService,
+                       AuditService auditService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
         this.authenticationManager = authenticationManager;
         this.userDetailsService = userDetailsService;
+        this.auditService = auditService;
     }
 
     @Transactional
@@ -49,15 +53,25 @@ public class UserService {
             .enabled(true)
             .build();
         userRepository.save(user);
+        auditService.recordUser(email, "USER_REGISTERED", "User", user.getId().toString(),
+            "name=" + user.getName());
         return issueToken(user);
     }
 
     public AuthResponse login(LoginRequest req) {
         String email = req.email().trim().toLowerCase();
-        authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(email, req.password()));
+        try {
+            authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(email, req.password()));
+        } catch (AuthenticationException e) {
+            // Actor is the *claimed* identity — the attempt failed, so it is unverified.
+            auditService.recordUser(email, "USER_LOGIN_FAILED", "User", null,
+                e.getClass().getSimpleName());
+            throw e;
+        }
         User user = userRepository.findByEmail(email)
             .orElseThrow(() -> ApiException.notFound("User not found"));
+        auditService.recordUser(email, "USER_LOGIN", "User", user.getId().toString(), null);
         return issueToken(user);
     }
 
@@ -82,6 +96,7 @@ public class UserService {
         }
         user.setPasswordHash(passwordEncoder.encode(req.newPassword()));
         userRepository.save(user);
+        auditService.recordUser(email, "USER_PASSWORD_CHANGED", "User", user.getId().toString(), null);
     }
 
     public User requireUser(String email) {

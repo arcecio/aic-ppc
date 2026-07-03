@@ -77,11 +77,10 @@ public class AdminKnowledgeController {
             throw ApiException.conflict("A code entry with externalId " + req.externalId()
                 + " already exists — use PUT or the import endpoint to update it");
         }
-        var result = syncService.importCorpus(List.of(req.toEntry()), actor(ud));
+        // importCorpus writes the REGCODE_CREATED audit entry (with an after-snapshot).
+        syncService.importCorpus(List.of(req.toEntry()), actor(ud));
         RegulatoryCode saved = repository.findByExternalId(req.externalId().trim())
             .orElseThrow(() -> ApiException.badRequest("Create failed"));
-        auditService.recordUser(actor(ud), "REGCODE_CREATED", "RegulatoryCode",
-            saved.getId().toString(), req.externalId() + " embedded=" + result.embedded());
         return RegulatoryCodeDto.from(saved);
     }
 
@@ -93,9 +92,8 @@ public class AdminKnowledgeController {
         if (!existing.getExternalId().equals(req.externalId().trim())) {
             throw ApiException.badRequest("externalId is immutable (" + existing.getExternalId() + ")");
         }
+        // importCorpus writes the REGCODE_UPDATED audit entry (with before/after snapshots).
         syncService.importCorpus(List.of(req.toEntry()), actor(ud));
-        auditService.recordUser(actor(ud), "REGCODE_UPDATED", "RegulatoryCode", id.toString(),
-            req.externalId());
         return RegulatoryCodeDto.from(repository.findById(id).orElseThrow());
     }
 
@@ -103,9 +101,10 @@ public class AdminKnowledgeController {
     public ResponseEntity<Void> delete(@AuthenticationPrincipal UserDetails ud, @PathVariable UUID id) {
         RegulatoryCode existing = repository.findById(id)
             .orElseThrow(() -> ApiException.notFound("Code entry not found"));
+        RegulatoryCodeDto before = RegulatoryCodeDto.from(existing);
         repository.delete(existing);
         auditService.recordUser(actor(ud), "REGCODE_DELETED", "RegulatoryCode", id.toString(),
-            existing.getExternalId());
+            existing.getExternalId(), before, null);
         return ResponseEntity.noContent().build();
     }
 

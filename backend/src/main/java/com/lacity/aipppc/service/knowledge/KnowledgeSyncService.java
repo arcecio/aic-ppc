@@ -2,6 +2,7 @@ package com.lacity.aipppc.service.knowledge;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lacity.aipppc.dto.admin.RegulatoryCodeDto;
 import com.lacity.aipppc.model.RegulatoryCode;
 import com.lacity.aipppc.model.enums.Jurisdiction;
 import com.lacity.aipppc.repository.RegulatoryCodeRepository;
@@ -80,23 +81,34 @@ public class KnowledgeSyncService {
     }
 
     private SyncResult applyCorpus(List<CodeEntry> entries, String actorLabel, String source) {
+        String actorType = "SYSTEM".equals(actorLabel) ? "SYSTEM" : "USER";
         int inserted = 0, updated = 0, unchanged = 0;
         for (CodeEntry e : entries) {
             if (e.externalId() == null || e.externalId().isBlank()) continue;
             RegulatoryCode existing = repository.findByExternalId(e.externalId().trim()).orElse(null);
             if (existing == null) {
-                repository.save(toEntity(e));
+                RegulatoryCode created = repository.save(toEntity(e));
+                auditService.record(actorType, actorLabel, actorLabel, "REGCODE_CREATED",
+                    "RegulatoryCode", created.getId().toString(), e.externalId().trim() + " via " + source,
+                    null, RegulatoryCodeDto.from(created));
                 inserted++;
-            } else if (apply(existing, e)) {
-                repository.save(existing);
-                updated++;
             } else {
-                unchanged++;
+                RegulatoryCodeDto before = RegulatoryCodeDto.from(existing);
+                if (apply(existing, e)) {
+                    repository.save(existing);
+                    auditService.record(actorType, actorLabel, actorLabel, "REGCODE_UPDATED",
+                        "RegulatoryCode", existing.getId().toString(),
+                        e.externalId().trim() + " via " + source,
+                        before, RegulatoryCodeDto.from(existing));
+                    updated++;
+                } else {
+                    unchanged++;
+                }
             }
         }
         int embedded = indexService.embedMissing();
         SyncResult result = new SyncResult(inserted, updated, unchanged, embedded);
-        auditService.record("SYSTEM".equals(actorLabel) ? "SYSTEM" : "USER", actorLabel, actorLabel,
+        auditService.record(actorType, actorLabel, actorLabel,
             "KNOWLEDGEBASE_SYNC", "RegulatoryCode", source,
             "inserted=" + inserted + " updated=" + updated + " unchanged=" + unchanged
                 + " embedded=" + embedded);
