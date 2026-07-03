@@ -121,6 +121,23 @@ public class StorageService {
         return basePath.resolve(storagePath);
     }
 
+    /** Removes every stored file for a project (its whole upload directory). */
+    public void deleteProjectFiles(UUID projectId) {
+        Path dir = basePath.resolve(projectId.toString());
+        if (!Files.exists(dir)) return;
+        try (var paths = Files.walk(dir)) {
+            paths.sorted(java.util.Comparator.reverseOrder()).forEach(p -> {
+                try {
+                    Files.delete(p);
+                } catch (IOException e) {
+                    log.warn("Could not delete stored file {}: {}", p, e.getMessage());
+                }
+            });
+        } catch (IOException e) {
+            log.warn("Could not remove storage directory for project {}: {}", projectId, e.getMessage());
+        }
+    }
+
     private String extractPdf(Path path) throws IOException {
         try (PDDocument doc = Loader.loadPDF(path.toFile())) {
             PDFTextStripper stripper = new PDFTextStripper();

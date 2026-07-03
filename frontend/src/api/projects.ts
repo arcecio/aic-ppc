@@ -13,6 +13,9 @@ export async function createProject(input: Record<string, unknown>): Promise<Pro
 export async function updateProject(id: string, input: Record<string, unknown>): Promise<Project> {
   return (await api.patch(`/projects/${id}`, input)).data;
 }
+export async function deleteProject(id: string): Promise<void> {
+  await api.delete(`/projects/${id}`);
+}
 export async function uploadDocument(
   id: string, file: File, docCategory?: string,
 ): Promise<DocumentDto> {
