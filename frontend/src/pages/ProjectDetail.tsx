@@ -1,9 +1,9 @@
 import { useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Download, FileUp, Play, Trash2, Send } from 'lucide-react';
 import {
-  getProject, latestRun, uploadDocument, deleteDocument, screenProject,
+  getProject, latestRun, uploadDocument, deleteDocument, deleteProject, screenProject,
   submitToEplanla, reportUrl, flagFinding,
 } from '../api/projects';
 import { Badge, Button, Card, ErrorText, Spinner } from '../components/ui';
@@ -15,6 +15,7 @@ import type { ReadinessStatus } from '../types';
 
 export default function ProjectDetail() {
   const { id = '' } = useParams();
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [docCategory, setDocCategory] = useState('');
@@ -47,6 +48,15 @@ export default function ProjectDetail() {
   const submit = useMutation({
     mutationFn: () => submitToEplanla(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['project', id] }),
+  });
+  const removeProject = useMutation({
+    mutationFn: () => deleteProject(id),
+    onSuccess: () => {
+      qc.removeQueries({ queryKey: ['project', id] });
+      qc.invalidateQueries({ queryKey: ['projects'] });
+      navigate('/');
+    },
+    onError: (e) => setError(apiError(e)),
   });
   const flag = useMutation({
     mutationFn: ({ fid, comment }: { fid: string; comment: string }) => flagFinding(fid, comment),
@@ -139,6 +149,14 @@ export default function ProjectDetail() {
               {project.submittedToEplanlaAt && (
                 <p className="text-xs text-green-700">Submitted to ePlanLA {shortDate(project.submittedToEplanlaAt)}</p>
               )}
+              <Button variant="danger" disabled={removeProject.isPending} className="w-full justify-center"
+                onClick={() => {
+                  if (window.confirm(`Delete "${project.title}" and all of its documents and screening results? This cannot be undone.`)) {
+                    removeProject.mutate();
+                  }
+                }}>
+                <Trash2 className="h-4 w-4" aria-hidden="true" /> {removeProject.isPending ? 'Deleting…' : 'Delete project'}
+              </Button>
             </div>
           </Card>
         </div>

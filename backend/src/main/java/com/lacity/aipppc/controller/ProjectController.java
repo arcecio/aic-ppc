@@ -78,6 +78,12 @@ public class ProjectController {
         return projectService.toDto(projectService.update(user(ud), id, req));
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@AuthenticationPrincipal UserDetails ud, @PathVariable UUID id) {
+        projectService.delete(user(ud), id);
+        return ResponseEntity.noContent().build();
+    }
+
     // ── documents ────────────────────────────────────────────────────────────────
     @PostMapping(value = "/{id}/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public DocumentDto upload(@AuthenticationPrincipal UserDetails ud, @PathVariable UUID id,

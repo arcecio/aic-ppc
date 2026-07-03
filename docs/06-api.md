@@ -75,6 +75,7 @@ All require a JWT. `{id}` is a project UUID.
 | GET | `/api/projects` | — | `ProjectSummaryDto[]` (owner's projects) |
 | GET | `/api/projects/{id}` | — | `ProjectDto` |
 | PATCH | `/api/projects/{id}` | `UpdateProjectRequest` | `ProjectDto` |
+| DELETE | `/api/projects/{id}` | — | `204 No Content` (owner or admin only; cascades documents, runs, findings, clearances, and stored files) |
 | POST | `/api/projects/{id}/documents` | multipart `file` + optional `docCategory` | `DocumentDto` |
 | GET | `/api/projects/{id}/documents` | — | `DocumentDto[]` |
 | GET | `/api/projects/{id}/documents/{docId}/download` | — | file stream (octet-stream) |

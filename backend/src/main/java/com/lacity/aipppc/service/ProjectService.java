@@ -167,6 +167,27 @@ public class ProjectService {
         auditService.recordUser(user.getEmail(), "DOCUMENT_DELETED", "Document", documentId.toString(), null);
     }
 
+    /**
+     * Deletes a project and everything under it. Restricted to the project's
+     * owner (or an admin) — staff review access does not extend to deleting an
+     * applicant's plan. Documents, runs, findings, and clearances are removed by
+     * the {@code ON DELETE CASCADE} constraints in V3; stored upload files are
+     * cleaned up afterwards.
+     */
+    @Transactional
+    public void delete(User user, UUID projectId) {
+        Project project = projectRepository.findById(projectId)
+            .orElseThrow(() -> ApiException.notFound("Project not found"));
+        if (!project.getOwner().getId().equals(user.getId()) && !user.isAdmin()) {
+            throw ApiException.forbidden("Only the project owner may delete this project");
+        }
+        String upid = project.getUniversalProjectId();
+        projectRepository.delete(project);
+        storageService.deleteProjectFiles(projectId);
+        auditService.recordUser(user.getEmail(), "PROJECT_DELETED", "Project", projectId.toString(),
+            "upid=" + upid);
+    }
+
     @Transactional
     public Project markSubmittedToEplanla(User user, UUID projectId) {
         Project project = requireAccessible(user, projectId);
