@@ -1,0 +1,55 @@
+# Production override for a single-VM deployment (see DEPLOYMENT.md).
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Adds a Caddy reverse proxy for automatic HTTPS (Let's Encrypt), stops
+# publishing internal service ports on the host, and makes the secrets that
+# have dev defaults in the base file mandatory.
+#
+# Requires Docker Compose v2.24.4+ (uses the `!override` tag to un-publish
+# the dev port mappings from the base file).
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: aip-ppc-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN in .env (e.g. ppc.example.com, or localhost for a local smoke test)}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+
+  postgres:
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASS:?Set DB_PASS in .env}
+    # Not reachable from outside the VM in production.
+    ports: !override []
+
+  backend:
+    restart: unless-stopped
+    environment:
+      DB_PASS: ${DB_PASS:?Set DB_PASS in .env}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env (>= 256 bits)}
+    # Only reachable via the frontend nginx -> /api proxy.
+    ports: !override []
+
+  frontend:
+    restart: unless-stopped
+    # Only reachable via Caddy.
+    ports: !override []
+
+  tei:
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:
