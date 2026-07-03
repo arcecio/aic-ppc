@@ -46,6 +46,14 @@ public class AuditLog {
     @Column(name = "ip_address", length = 64)
     private String ipAddress;
 
+    /** Entity snapshot before the change (JSON); null for creates and non-mutating actions. */
+    @Column(name = "before_json", columnDefinition = "text")
+    private String beforeJson;
+
+    /** Entity snapshot after the change (JSON); null for deletes and non-mutating actions. */
+    @Column(name = "after_json", columnDefinition = "text")
+    private String afterJson;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -70,6 +78,10 @@ public class AuditLog {
     public void setDetail(String detail) { this.detail = detail; }
     public String getIpAddress() { return ipAddress; }
     public void setIpAddress(String ipAddress) { this.ipAddress = ipAddress; }
+    public String getBeforeJson() { return beforeJson; }
+    public void setBeforeJson(String beforeJson) { this.beforeJson = beforeJson; }
+    public String getAfterJson() { return afterJson; }
+    public void setAfterJson(String afterJson) { this.afterJson = afterJson; }
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }

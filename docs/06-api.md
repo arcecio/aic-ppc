@@ -356,11 +356,20 @@ surface — City staff update rules, thresholds, and references without vendor c
 | GET | `/api/admin/users` | — | `UserDto[]` |
 | PATCH | `/api/admin/users/{id}/role` | `{ role }` | `UserDto` |
 | PATCH | `/api/admin/users/{id}/enabled` | `{ enabled }` | `UserDto` |
-| GET | `/api/admin/audit` | `page?`, `size?` | audit-log entries (newest first) |
+| GET | `/api/admin/audit` | `page?`, `size?`, `actorType?`, `actor?`, `action?`, `entityType?`, `entityId?`, `from?`, `to?` | audit-log entries (newest first) |
 
 Creating an API client returns the raw `X-API-Key` **once** (`aip_live_<40 hex>`); only its
 SHA-256 hash is persisted (`ApiKeyHasher`). Rule create/update/delete and client/user changes are
 recorded in the append-only `audit_log`.
+
+Audit filters combine with AND: `actorType` (USER/STAFF/API_CLIENT/SYSTEM), `actor`
+(substring of actor id/label), `action` (exact, e.g. `RULE_UPDATED`), and
+`entityType` + `entityId` — together the per-entity change trail, e.g.
+`/api/admin/audit?entityType=ScreeningRule&entityId=<uuid>`. `from`/`to` accept an ISO
+instant or a plain date (`to` as a date is inclusive). Each entry carries the client
+`ipAddress` and, for rule / knowledgebase / user mutations, `beforeJson`/`afterJson`
+entity snapshots for field-level change forensics. Auth events (`USER_REGISTERED`,
+`USER_LOGIN`, `USER_LOGIN_FAILED`, `USER_PASSWORD_CHANGED`) are audited too.
 
 ### Knowledgebase — `/api/admin/regulatory-codes` (AdminKnowledgeController — implemented)
 

@@ -2,18 +2,27 @@ package com.lacity.aipppc.controller;
 
 import com.lacity.aipppc.dto.admin.*;
 import com.lacity.aipppc.dto.auth.UserDto;
+import com.lacity.aipppc.exception.ApiException;
 import com.lacity.aipppc.model.AuditLog;
 import com.lacity.aipppc.model.User;
 import com.lacity.aipppc.repository.AuditLogRepository;
 import com.lacity.aipppc.service.*;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -132,21 +141,92 @@ public class AdminController {
     }
 
     // ── audit log ────────────────────────────────────────────────────────────────
+    /**
+     * Filterable audit query surface (SOW 2.2.14). All filters combine with AND;
+     * {@code entityType} + {@code entityId} together give the per-entity change
+     * trail (e.g. every edit of one screening rule). {@code from}/{@code to}
+     * accept an ISO instant or a plain date ({@code to} as a date is inclusive).
+     */
     @GetMapping("/audit")
-    public List<Map<String, Object>> audit(@RequestParam(value = "page", defaultValue = "0") int page,
-                                           @RequestParam(value = "size", defaultValue = "100") int size) {
-        return auditLogRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(page, size))
+    public List<Map<String, Object>> audit(
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "100") int size,
+            @RequestParam(value = "actorType", required = false) String actorType,
+            @RequestParam(value = "actor", required = false) String actor,
+            @RequestParam(value = "action", required = false) String action,
+            @RequestParam(value = "entityType", required = false) String entityType,
+            @RequestParam(value = "entityId", required = false) String entityId,
+            @RequestParam(value = "from", required = false) String from,
+            @RequestParam(value = "to", required = false) String to) {
+        List<Specification<AuditLog>> specs = new ArrayList<>();
+        if (hasText(actorType)) {
+            String v = actorType.trim().toUpperCase(Locale.ROOT);
+            specs.add((r, q, cb) -> cb.equal(r.get("actorType"), v));
+        }
+        if (hasText(actor)) {
+            String like = "%" + actor.trim().toLowerCase(Locale.ROOT) + "%";
+            specs.add((r, q, cb) -> cb.or(
+                cb.like(cb.lower(r.get("actorId")), like),
+                cb.like(cb.lower(r.get("actorLabel")), like)));
+        }
+        if (hasText(action)) {
+            String v = action.trim().toUpperCase(Locale.ROOT);
+            specs.add((r, q, cb) -> cb.equal(r.get("action"), v));
+        }
+        if (hasText(entityType)) {
+            String v = entityType.trim().toLowerCase(Locale.ROOT);
+            specs.add((r, q, cb) -> cb.equal(cb.lower(r.get("entityType")), v));
+        }
+        if (hasText(entityId)) {
+            String v = entityId.trim();
+            specs.add((r, q, cb) -> cb.equal(r.get("entityId"), v));
+        }
+        Instant fromTs = parseTimestamp(from, false);
+        if (fromTs != null) {
+            specs.add((r, q, cb) -> cb.greaterThanOrEqualTo(r.get("createdAt"), fromTs));
+        }
+        Instant toTs = parseTimestamp(to, true);
+        if (toTs != null) {
+            specs.add((r, q, cb) -> cb.lessThan(r.get("createdAt"), toTs));
+        }
+        return auditLogRepository.findAll(Specification.allOf(specs),
+                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")))
             .stream().map(this::auditRow).toList();
     }
 
+    private boolean hasText(String v) {
+        return v != null && !v.isBlank();
+    }
+
+    /** ISO instant, or a plain date taken as UTC midnight ({@code endOfDay} pushes to the next midnight). */
+    private Instant parseTimestamp(String raw, boolean endOfDay) {
+        if (!hasText(raw)) return null;
+        String v = raw.trim();
+        try {
+            return Instant.parse(v);
+        } catch (Exception ignored) { /* fall through to plain date */ }
+        try {
+            LocalDate date = LocalDate.parse(v);
+            return (endOfDay ? date.plusDays(1) : date).atStartOfDay(ZoneOffset.UTC).toInstant();
+        } catch (Exception e) {
+            throw ApiException.badRequest("Invalid timestamp '" + v
+                + "' — use an ISO instant (2026-07-01T00:00:00Z) or date (2026-07-01)");
+        }
+    }
+
     private Map<String, Object> auditRow(AuditLog a) {
-        return Map.of(
-            "id", a.getId(), "actorType", a.getActorType(),
-            "actorLabel", a.getActorLabel() == null ? "" : a.getActorLabel(),
-            "action", a.getAction(),
-            "entityType", a.getEntityType() == null ? "" : a.getEntityType(),
-            "entityId", a.getEntityId() == null ? "" : a.getEntityId(),
-            "detail", a.getDetail() == null ? "" : a.getDetail(),
-            "createdAt", a.getCreatedAt());
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("id", a.getId());
+        row.put("actorType", a.getActorType());
+        row.put("actorLabel", a.getActorLabel() == null ? "" : a.getActorLabel());
+        row.put("action", a.getAction());
+        row.put("entityType", a.getEntityType() == null ? "" : a.getEntityType());
+        row.put("entityId", a.getEntityId() == null ? "" : a.getEntityId());
+        row.put("detail", a.getDetail() == null ? "" : a.getDetail());
+        row.put("ipAddress", a.getIpAddress() == null ? "" : a.getIpAddress());
+        row.put("beforeJson", a.getBeforeJson());
+        row.put("afterJson", a.getAfterJson());
+        row.put("createdAt", a.getCreatedAt());
+        return row;
     }
 }

@@ -25,6 +25,17 @@ export async function listUsers() {
 export async function setUserRole(id: string, role: string) {
   return (await api.patch(`/admin/users/${id}/role`, { role })).data;
 }
-export async function auditLog() {
-  return (await api.get('/admin/audit')).data;
+export interface AuditFilters {
+  page?: number;
+  size?: number;
+  actorType?: string;
+  actor?: string;
+  action?: string;
+  entityType?: string;
+  entityId?: string;
+  from?: string;
+  to?: string;
+}
+export async function auditLog(filters: AuditFilters = {}) {
+  return (await api.get('/admin/audit', { params: filters })).data;
 }

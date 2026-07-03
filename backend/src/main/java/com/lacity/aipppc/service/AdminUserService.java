@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -39,20 +40,22 @@ public class AdminUserService {
         } catch (Exception e) {
             throw ApiException.badRequest("Invalid role: " + role + " (APPLICANT, STAFF, or ADMIN)");
         }
+        User.Role oldRole = user.getRole();
         user.setRole(newRole);
         userRepository.save(user);
         auditService.recordUser(admin.getEmail(), "USER_ROLE_CHANGED", "User", userId.toString(),
-            "role=" + newRole);
+            "role=" + newRole, Map.of("role", oldRole.name()), Map.of("role", newRole.name()));
         return user;
     }
 
     @Transactional
     public User setEnabled(User admin, UUID userId, boolean enabled) {
         User user = require(userId);
+        boolean wasEnabled = user.isEnabled();
         user.setEnabled(enabled);
         userRepository.save(user);
         auditService.recordUser(admin.getEmail(), "USER_ENABLED_CHANGED", "User", userId.toString(),
-            "enabled=" + enabled);
+            "enabled=" + enabled, Map.of("enabled", wasEnabled), Map.of("enabled", enabled));
         return user;
     }
 
