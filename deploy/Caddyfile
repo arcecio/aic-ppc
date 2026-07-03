@@ -1,0 +1,15 @@
+# TLS-terminating reverse proxy in front of the frontend nginx container,
+# which in turn proxies /api to the Spring Boot backend (frontend/nginx.conf).
+#
+# DOMAIN comes from .env. With a real domain Caddy provisions Let's Encrypt
+# certificates automatically; with DOMAIN=localhost it serves a self-signed
+# certificate for local smoke tests.
+
+{$DOMAIN}
+
+# Plan uploads run up to ~100 MB (nginx allows 110M); match that here.
+request_body {
+	max_size 120MB
+}
+
+reverse_proxy frontend:80
