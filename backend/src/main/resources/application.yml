@@ -62,15 +62,24 @@ app:
     target-processing-ms: ${SCREENING_TARGET_MS:1800000}
 
   ai:
-    # Which AI provider augments the rule-based engine. Values: anthropic | none.
-    # When 'none' (or no API key), screening is rules-only + deterministic
-    # heuristic augmentation so the system runs fully offline.
+    # Which AI provider augments the rule-based engine. Values: anthropic | lmstudio | none.
+    # When 'none' (or the configured provider is unreachable), screening is rules-only +
+    # deterministic heuristic augmentation so the system runs fully offline.
     provider: ${AI_PROVIDER:anthropic}
     anthropic:
       api-key: ${ANTHROPIC_API_KEY:}
       api-url: ${ANTHROPIC_API_URL:https://api.anthropic.com/v1}
       default-model: ${ANTHROPIC_MODEL:claude-sonnet-4-6}
       max-tokens: ${ANTHROPIC_MAX_TOKENS:4096}
+    lmstudio:
+      # LM Studio's OpenAI-compatible server. Runs locally, so City data never
+      # leaves the host. No API key required by default; set default-model to the
+      # identifier of the model currently loaded in LM Studio.
+      api-url: ${LMSTUDIO_API_URL:http://localhost:1234/v1}
+      api-key: ${LMSTUDIO_API_KEY:}
+      default-model: ${LMSTUDIO_MODEL:local-model}
+      max-tokens: ${LMSTUDIO_MAX_TOKENS:4096}
+      temperature: ${LMSTUDIO_TEMPERATURE:0.2}
 
   embedding:
     # Semantic-retrieval sidecar for the knowledgebase (Blue's TEI pattern):

@@ -3,7 +3,8 @@ package com.lacity.aipppc.service.ai;
 /**
  * A pluggable AI analysis backend that <b>augments</b> the rule engine
  * (SOW 2.2.3 — AI "used to enhance detection and interpretation", not the primary
- * mechanism). Implementations: {@code AnthropicAiProvider} (Claude) and
+ * mechanism). Implementations: {@code AnthropicAiProvider} (Claude),
+ * {@code LMStudioAiProvider} (local, OpenAI protocol) and
  * {@code HeuristicAiProvider} (deterministic, offline). The active provider is
  * chosen by {@code AiAnalysisService}.
  */
