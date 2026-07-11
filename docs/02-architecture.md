@@ -27,7 +27,7 @@ the security model, deployment, and configuration. It mirrors the Blue reference
                               │                    JwtAuthFilter              │
                               │  Controllers → Services → Repositories       │
                               │  Async screening pipeline (thread pool)      │
-                              │  AI providers: Anthropic | Heuristic         │
+                              │  AI providers: Anthropic/LMStudio/Heuristic  │
                               │  Doc extraction: PDFBox / POI                │
                               │  Report: PDFBox                              │
                               └───────┬──────────────────────┬───────────────┘
@@ -108,6 +108,7 @@ All of the above are **implemented**; their security matchers are defined in `Se
 | `AiAnalysisService` | selects the active AI provider, with heuristic fallback |
 | `AiProvider` | the pluggable provider interface |
 | `AnthropicAiProvider` | Claude Messages-API implementation |
+| `LMStudioAiProvider` | local OpenAI-compatible provider (LM Studio); runs on-host so City data never leaves the machine |
 | `HeuristicAiProvider` | deterministic offline keyword provider (always available) |
 | `AiModels` | request/analysis/finding DTOs shared by the providers |
 
@@ -186,8 +187,8 @@ Inside `runScreening(runId)` the pipeline runs in order:
    most relevant code sections (lexical keyword arm + pgvector cosine arm over e5-large-v2
    embeddings, RRF-fused k=60, top-8; vector arm silently off when the TEI sidecar is
    unreachable) and injects them into the prompt as "RELEVANT CODE CONTEXT".
-   `AiAnalysisService.analyze()` then runs the active provider (Anthropic if keyed and
-   available, else the heuristic). AI findings whose titles duplicate an existing finding
+   `AiAnalysisService.analyze()` then runs the active provider (the configured `AI_PROVIDER` —
+   Anthropic or LM Studio — when available, else the heuristic). AI findings whose titles duplicate an existing finding
    are skipped (`containsTitle`); the rest are added (source `AI`). Code references are
    resolved to URLs via `RegulatoryKnowledgeService`. The provider + model used are stamped
    on the run.
@@ -280,17 +281,19 @@ append-only `audit_log` provides auditability of all transactions (SOW §2.2.14,
 
 ## Deployment
 
-`docker-compose.yml` (at `app/`) defines three services on Colima:
+`docker-compose.yml` (at `app/`) defines four services on Colima (the TEI embeddings sidecar
+is optional, gated behind the `docker-tei` profile):
 
 | Service | Container | Host port → container | Image basis |
 |---|---|---|---|
 | `postgres` | `aip-ppc-postgres` | **5434** → 5432 | `backend/docker/postgres/Dockerfile` (Postgres 16) |
 | `backend` | `aip-ppc-backend` | **8082** → 8080 | `backend/Dockerfile` (Spring Boot, Java 21) |
 | `frontend` | `aip-ppc-frontend` | **8095** → 80 | `frontend/Dockerfile` (Vite build → nginx) |
+| `tei` *(profile `docker-tei`)* | `aip-ppc-tei` | **8086** → 80 | Hugging Face TEI (e5-large-v2); off by default |
 
 Ports are offset from the Blue/munch stacks so all can coexist on one Colima VM. Postgres has
 a `pg_isready` healthcheck; the backend `depends_on` it being healthy. Volumes: `postgres_data`
-(DB) and `storage_data` (`/app/storage` uploads).
+(DB), `storage_data` (`/app/storage` uploads), and `tei_cache` (downloaded embedding-model weights).
 
 Quick start:
 ```bash
@@ -335,11 +338,15 @@ All settings resolve from environment variables with in-file defaults. Key entri
 | `KB_SCHEDULER_ENABLED` | `false` (compose: `true`) | Monthly knowledgebase refresh (SOW 2.2.13) |
 | `KB_SCHEDULER_CRON` | `0 0 4 1 * *` | Refresh cadence — 04:00 on the 1st of each month |
 | `SCREENING_TARGET_MS` | `1800000` (30 min) | KPI target for the analytics dashboard (SOW §2.2.10) |
-| `AI_PROVIDER` | `anthropic` | AI provider: `anthropic` or `none` |
+| `AI_PROVIDER` | `anthropic` | AI provider that augments the rules: `anthropic`, `lmstudio`, or `none` |
 | `ANTHROPIC_API_KEY` | (blank) | Enables the Claude provider; blank → heuristic fallback |
 | `ANTHROPIC_API_URL` | `https://api.anthropic.com/v1` | Anthropic base URL |
 | `ANTHROPIC_MODEL` | `claude-sonnet-4-6` | Configured Claude model (see note) |
 | `ANTHROPIC_MAX_TOKENS` | `4096` | Max output tokens per AI call |
+| `LMSTUDIO_API_URL` | `http://localhost:1234/v1` | LM Studio's OpenAI-compatible server (used when `AI_PROVIDER=lmstudio`) |
+| `LMSTUDIO_API_KEY` | (blank) | Optional bearer token; LM Studio needs none by default |
+| `LMSTUDIO_MODEL` | `local-model` | Identifier of the model loaded in LM Studio |
+| `LMSTUDIO_MAX_TOKENS` / `LMSTUDIO_TEMPERATURE` | `4096` / `0.2` | Max output tokens / sampling temperature for the local model |
 
 Other static config: Flyway migrations at `classpath:db/migration` with
 `baseline-on-migrate: true`; JPA `ddl-auto: validate` (schema is owned by Flyway, not
@@ -361,7 +368,7 @@ Hibernate); multipart limits 100 MB file / 110 MB request; springdoc Swagger UI 
 | Security | Spring Security, jjwt 0.12.6 (HS256) |
 | Database | PostgreSQL 16, Flyway migrations, Spring Data JPA (`validate`) |
 | Document parsing | Apache PDFBox 3.0.3 (PDF text + report), Apache POI 5.3.0 (DOCX) |
-| AI | Anthropic Claude via `java.net.http.HttpClient`; deterministic `HeuristicAiProvider` fallback |
+| AI | Pluggable provider via `java.net.http.HttpClient`: Anthropic Claude (Messages API) or a local LM Studio model (OpenAI protocol); deterministic `HeuristicAiProvider` fallback |
 | API docs | springdoc-openapi 2.6.0 / Swagger UI |
 | Frontend | Vite + React 18 + TypeScript, TanStack Query, Tailwind (WCAG/ADA) |
 | Runtime | Docker Compose on Colima |

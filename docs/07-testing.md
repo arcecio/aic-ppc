@@ -6,11 +6,24 @@ The test strategy has four layers, matching the Blue reference: backend **unit t
 deterministic core, **`@WebMvcTest` controller slices** exercised through the real
 `SecurityConfig`, **Testcontainers** repository/integration tests against a real Postgres, and
 **vitest** for the frontend. The Gradle wiring (`testAll` task, Testcontainers dependencies,
-Colima socket overrides) already exists in `backend/build.gradle.kts`; the corresponding test
-sources are being added alongside the staff/integration surfaces.
+Colima socket overrides) lives in `backend/build.gradle.kts`. Tests exist today across the unit,
+controller-slice, and Testcontainers layers — currently **10 backend test classes** plus a shared
+Postgres helper, and **2 frontend test files**. The per-layer notes below describe the intended
+coverage; the highest-value targets not yet backed by a test file are marked **(planned)**.
 
 Because the AI arm degrades to the deterministic `HeuristicAiProvider` when no Anthropic key is
 present, **tests never require an API key** — the whole pipeline is reproducible offline.
+
+### Current coverage (as shipped)
+
+Backend (`backend/src/test/java/com/lacity/aipppc/`): `service/rules/RuleConditionEvaluatorTest`,
+`service/screening/ScreeningScoringTest`, `service/screening/CompletenessServiceTest`,
+`service/screening/TemplateRendererTest`, `service/rag/RrfFusionTest`, `service/AuditServiceTest`,
+`service/ProjectServiceDeleteTest`, `controller/AuthControllerTest` (`@WebMvcTest` through the real
+`SecurityConfig`), `integration/ScreeningIntegrationTest` (Testcontainers end-to-end screening +
+seeder) and `integration/KnowledgeBaseIntegrationTest` (Testcontainers KB / pgvector pipeline,
+`V4`), plus the shared `support/TestPostgres` container helper. Frontend:
+`components/FindingList.test.tsx` and `lib/format.test.ts`.
 
 ---
 
@@ -52,14 +65,15 @@ targets:
 - **Completeness** (`CompletenessService.evaluate`) — required-doc detection from
   `requiredDocsJson`, scan-failed/quarantined files flagged BLOCKING, the empty-uploads case,
   and correct `requiredCount` / `presentRequiredCount` roll-ups (which feed scoring).
-- **Context builder** (`ProjectContextBuilder`) — parcel overlays/hazards flattening,
+- **Context builder** (`ProjectContextBuilder`) **(planned)** — parcel overlays/hazards flattening,
   dynamic-form keys added with `putIfAbsent` (built-ins not shadowed), `presentDocs` from
   scan-passed docs, `missingDocs` from the checklist, and the combined `text` field.
 - **Template renderer** (`TemplateRenderer`) — `{{placeholder}}` substitution, `(unspecified)`
   for null, list join, and whole-number formatting.
-- **Confidence bucketing** (`ConfidenceLevel.fromScore`) — the `85 / 55` thresholds.
-- **UPID generation** (`ProjectService`) — format `LA-<year>-<6 digits>` and collision retry.
-- **Heuristic AI** (`HeuristicAiProvider`) — deterministic keyword signals and the
+- **Confidence bucketing** (`ConfidenceLevel.fromScore`) **(planned)** — the `85 / 55` thresholds.
+- **UPID generation** (`ProjectService`) **(planned)** — format `LA-<year>-<6 digits>` and collision retry.
+  (`ProjectServiceDeleteTest` currently covers deletion authorization, not UPID format.)
+- **Heuristic AI** (`HeuristicAiProvider`) **(planned)** — deterministic keyword signals and the
   "limited machine-readable content" finding when no text is extracted.
 
 These need no Colima and run in milliseconds.
@@ -74,17 +88,17 @@ exercised (`@Import(SecurityConfig.class)` plus the JWT/API-key filters). Use
 `spring-security-test` (`@WithMockUser`, `SecurityMockMvcRequestPostProcessors`) — it's already
 a `testImplementation` dependency.
 
-What the slices assert:
+What the slices assert (`AuthControllerTest` is implemented; the remaining slices are **planned**):
 - **AuthController** — register/login return a token; `/me` requires a valid Bearer token;
   `register`/`login` are permit-all while `/me`, `/profile`, `/change-password` require auth.
-- **ProjectController** — create/list/get/update/upload/screen/report happy paths; ownership
+- **ProjectController** **(planned)** — create/list/get/update/upload/screen/report happy paths; ownership
   enforcement (owner vs. another applicant vs. staff → `403` for the non-owner non-staff case);
   multipart upload binding; the PDF report content type; `204` from `runs/latest` when no run
   exists.
-- **RunController** — run detail access control; the flag endpoint requires a non-blank comment
+- **RunController** **(planned)** — run detail access control; the flag endpoint requires a non-blank comment
   (bean validation → `400`).
-- **ReferenceController** — permit-type and parcel/code search shapes.
-- **Route authorization** — anonymous access to `/api/v1/**`, `/api/staff/**`, `/api/admin/**`
+- **ReferenceController** **(planned)** — permit-type and parcel/code search shapes.
+- **Route authorization** **(planned)** — anonymous access to `/api/v1/**`, `/api/staff/**`, `/api/admin/**`
   is rejected; a valid `X-API-Key` yields `ROLE_API_CLIENT`; a JWT without STAFF/ADMIN cannot
   reach staff/admin routes.
 

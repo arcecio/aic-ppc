@@ -6,8 +6,10 @@ This document describes every persisted entity, its key fields and relationships
 the enum vocabulary. Everything here is backed by JPA `@Entity` classes under
 `backend/src/main/java/com/lacity/aipppc/model/` and the Flyway migrations under
 `backend/src/main/resources/db/migration/` (`V1__init_auth.sql`, `V2__reference_data.sql`,
-`V3__projects.sql`). JPA runs with `ddl-auto: validate`, so the Java entities and the SQL
-schema are kept in exact lockstep.
+`V3__projects.sql`, `V4__pgvector_embeddings.sql`, `V5__audit_snapshots.sql`). JPA runs with
+`ddl-auto: validate`, so the Java entities and the SQL schema are kept in lockstep — the one
+deliberate exception is the `regulatory_codes.embedding` pgvector column (added in `V4`), which
+is managed by native SQL rather than a mapped JPA field.
 
 A design decision worth calling out: **all enums are stored as `varchar`, validated by the
 Java enum**, not as native Postgres enum types. New values (a new department, a new finding
@@ -191,9 +193,14 @@ code reference and link.
 | `version` | varchar | Which code edition was applied |
 | `updatedAt` | timestamptz | |
 
-`RegulatoryKnowledgeService` performs lightweight lexical retrieval over this table to build
-the code-context block passed to the AI provider and to resolve a free-form reference (e.g.
-`"LAMC 12.21-C"`) back to its canonical URL.
+In addition to the columns above, migration `V4` adds an `embedding vector(1024)` pgvector
+column (with an HNSW cosine index) that is **not** mapped as a JPA field — it is populated and
+queried through native SQL by the embedding/retrieval services.
+
+`RegulatoryKnowledgeService` performs **hybrid** retrieval over this table — a lexical (keyword)
+arm plus a pgvector cosine arm over the `embedding` column, RRF-fused — to build the code-context
+block passed to the AI provider and to resolve a free-form reference (e.g. `"LAMC 12.21-C"`) back
+to its canonical URL. Without the embedding sidecar it degrades to lexical-only.
 
 ### ScreeningRule — `screening_rules`
 A configurable pre-screening rule — the **primary** detection mechanism. Staff CRUD these
@@ -387,6 +394,7 @@ Append-only audit trail. Every meaningful action writes one row.
 | `entityType` / `entityId` | varchar, nullable | Target of the action |
 | `detail` | text, nullable | |
 | `ipAddress` | varchar, nullable | |
+| `beforeJson` / `afterJson` | text, nullable | Before/after entity snapshots (added in `V5`) for field-level change forensics on rule / knowledgebase / user mutations |
 | `createdAt` | timestamptz (indexed desc) | |
 
 Written via `AuditService`, whose writes never propagate failures — auditing must not break

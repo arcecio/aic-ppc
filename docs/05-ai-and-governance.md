@@ -41,6 +41,13 @@ The AI arm is a small, pluggable abstraction:
   confidence (0–100), recommendation, and triggering condition. It is `available()` only when an
   API key is configured; on any non-2xx response or exception it returns
   `AiAnalysis.unavailable()` and logs — it **never** hard-fails the screening.
+- **`LMStudioAiProvider`** — calls a **local** OpenAI-compatible server (LM Studio; default
+  `http://localhost:1234/v1`) over `java.net.http.HttpClient`, posting a Chat Completions request
+  and parsing `choices[0].message.content` into the same strict-JSON findings. Because the model
+  runs on-host, **City data never leaves the machine** — the strongest reading of the SOW §4.4
+  data-minimization posture. Selected with `AI_PROVIDER=lmstudio`; `available()` whenever a base
+  URL is configured, and on any error it returns `AiAnalysis.unavailable()` so the run falls back
+  to the heuristic. It stamps `aiProviderUsed = lmstudio` and the configured model id.
 - **`HeuristicAiProvider`** — a deterministic, fully-offline keyword scanner. It matches a fixed
   set of signals (egress, sprinkler, restroom, parking, stair, occupancy) against the combined
   project + document text and emits advisory findings the pure rule engine might miss, plus a
@@ -62,9 +69,11 @@ The Anthropic system prompt (in `AnthropicAiProvider`) encodes the advisory prin
 > / CBC sections where possible. Be conservative with confidence."
 
 Configuration is entirely env-driven (`app.ai.*` in `application.yml`): `AI_PROVIDER`
-(`anthropic` | `none`), `ANTHROPIC_API_KEY`, `ANTHROPIC_API_URL`, `ANTHROPIC_MODEL` (default
-`claude-sonnet-4-6`; overridable per deployment to the current recommended model without a code
-change), `ANTHROPIC_MAX_TOKENS`.
+(`anthropic` | `lmstudio` | `none`), `ANTHROPIC_API_KEY`, `ANTHROPIC_API_URL`, `ANTHROPIC_MODEL`
+(default `claude-sonnet-4-6`; overridable per deployment to the current recommended model without
+a code change), `ANTHROPIC_MAX_TOKENS`, and — for the local option — `LMSTUDIO_API_URL`,
+`LMSTUDIO_API_KEY`, `LMSTUDIO_MODEL`, `LMSTUDIO_MAX_TOKENS`, `LMSTUDIO_TEMPERATURE`. The same
+guardrail system prompt is used for both the Anthropic and LM Studio providers.
 
 ---
 
@@ -103,9 +112,9 @@ system is actually built.
 | Field | Value |
 |---|---|
 | Name of AI System/Tool | AI-Powered Pre-Plan Check Assistant (AIP PPC) |
-| AI Provider/Developer | **Primary detection:** configurable rule-based engine (custom, City-configurable — no third-party model). **AI augmentation:** Anthropic Claude via the Anthropic Messages API. **Offline fallback:** a deterministic in-system heuristic (`HeuristicAiProvider`) that uses no external model. |
-| Material Version or Model Family | Anthropic **Claude** (Sonnet family; configured via `ANTHROPIC_MODEL`, recorded per run as `aiModelUsed`). Rule engine + heuristic are versioned in the application; the applied code edition is stamped per run as `codeVersion`. |
-| Hosting Region | **U.S.-based hosting** for the application, database, and file storage (SOW §4.4.3). The Anthropic API is invoked over TLS from U.S. infrastructure. When no API key is configured, the system runs **fully offline** with no external model calls. |
+| AI Provider/Developer | **Primary detection:** configurable rule-based engine (custom, City-configurable — no third-party model). **AI augmentation (selectable via `AI_PROVIDER`):** Anthropic Claude via the Anthropic Messages API, **or** a City-hosted local model served by LM Studio over the OpenAI protocol (`LMStudioAiProvider`) so no data leaves City infrastructure. **Offline fallback:** a deterministic in-system heuristic (`HeuristicAiProvider`) that uses no external model. |
+| Material Version or Model Family | Anthropic **Claude** (Sonnet family; configured via `ANTHROPIC_MODEL`) or the operator-selected local model (`LMSTUDIO_MODEL`); the provider and model actually used are recorded per run as `aiProviderUsed` / `aiModelUsed`. Rule engine + heuristic are versioned in the application; the applied code edition is stamped per run as `codeVersion`. |
+| Hosting Region | **U.S.-based hosting** for the application, database, and file storage (SOW §4.4.3). The Anthropic API is invoked over TLS from U.S. infrastructure. Choosing the LM Studio provider (or configuring no API key) keeps the system **fully self-hosted** with no external model calls. |
 
 ### Section 4 — Use Case & Data Processing
 

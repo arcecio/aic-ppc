@@ -38,7 +38,7 @@ on Docker/Colima) and is deployed to <https://github.com/arcecio/aic-ppc>.
 |-----------|--------|
 | Backend   | Spring Boot 3.3, Java 21, Gradle (Kotlin DSL) |
 | Database  | PostgreSQL 16 + **pgvector** (Flyway migrations, JPA `validate`) |
-| AI        | Anthropic Claude (`AnthropicAiProvider`) with a deterministic offline `HeuristicAiProvider` fallback |
+| AI        | Pluggable provider (`AI_PROVIDER`): Anthropic Claude (`AnthropicAiProvider`) or a local OpenAI-compatible model via LM Studio (`LMStudioAiProvider`), with a deterministic offline `HeuristicAiProvider` fallback |
 | Retrieval | Hybrid knowledgebase RAG: lexical + pgvector cosine (e5-large-v2 via optional TEI sidecar), RRF-fused; degrades to lexical-only |
 | Docs      | Plan text via Apache PDFBox (PDF) & POI (DOCX); PDF report via PDFBox |
 | API docs  | springdoc OpenAPI / Swagger UI |
@@ -186,9 +186,12 @@ See [`docs/`](docs/):
 
 ```
 app/
-├── backend/     Spring Boot service (engine, rules, AI, API)
-├── frontend/    React web app (applicant + staff)
-├── console/     Local dev control plane (start/stop/health, Docker↔native)
-├── docs/        Architecture, API, RTM, governance
-└── docker-compose.yml
+├── backend/                 Spring Boot service (engine, rules, AI, API)
+├── frontend/                React web app (applicant + staff)
+├── console/                 Local dev control plane (start/stop/health, Docker↔native)
+├── docs/                    Architecture, API, RTM, governance
+├── deploy/                  Caddyfile (production HTTPS reverse proxy)
+├── docker-compose.yml       Dev stack (Postgres + backend + frontend + optional TEI)
+├── docker-compose.prod.yml  Production override (Caddy HTTPS — see DEPLOYMENT.md)
+└── DEPLOYMENT.md            Single-VM production deployment guide
 ```

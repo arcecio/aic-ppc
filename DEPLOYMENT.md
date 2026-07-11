@@ -111,7 +111,8 @@ Database schema migrations (Flyway) run automatically on backend startup.
 # Database
 docker exec aip-ppc-postgres pg_dump -U aipppc aipppc | gzip > backup-$(date +%F).sql.gz
 
-# Uploaded plan files (volume aic-ppc_storage_data, mounted in the backend)
+# Uploaded plan files (the storage_data volume mounted at /app/storage in the backend;
+# --volumes-from reads it by the fixed container name, independent of the compose project prefix)
 docker run --rm --volumes-from aip-ppc-backend -v "$PWD":/backup alpine \
   tar czf /backup/storage-$(date +%F).tar.gz /app/storage
 ```

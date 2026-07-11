@@ -167,8 +167,10 @@ Rules are plain database rows. The intended editing paths:
 1. **Seed corpus** — `ReferenceDataSeeder` loads `seed/screening-rules.json` and
    `seed/clearance-rules.json` on boot. Seeding is **idempotent by `code`**: an existing rule
    is left untouched, so staff edits are never clobbered on restart.
-2. **Admin rule-management API** (designed) — the `/api/admin/**` surface (ADMIN role, per
-   `SecurityConfig`) is where staff CRUD rules at runtime. Editing a rule is editing its
+2. **Admin rule-management API** (implemented) — the `/api/admin/**` surface (ADMIN role, per
+   `SecurityConfig`) is where staff CRUD rules at runtime, via `AdminController` +
+   `RuleAdminService` (`GET/POST/PUT/DELETE /api/admin/screening-rules` and
+   `.../clearance-rules`) with the `AdminRules.tsx` staff UI on top. Editing a rule is editing its
    `conditionJson`, `severity`, `message`, `recommendation`, `codeReference`, `confidence`,
    `appliesToPermitTypes`, `priority`, or `active` flag — no deployment required.
 
@@ -309,7 +311,7 @@ placeholder referenced `{{hazards}}`, the renderer would produce `Liquefaction, 
 
 ## Seed rule inventory (as shipped)
 
-The seed ships **26 screening rules** and **15 clearance rules**:
+The seed ships **25 screening rules** and **15 clearance rules**:
 
 - **Screening rules** span zoning/site (setbacks, height/stories, FAR/coverage, hillside
   grading, coastal, HPOZ, TOC, AB 2097 parking, change of use, signs), fire (VHFHSZ), hazards
