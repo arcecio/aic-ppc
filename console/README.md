@@ -50,6 +50,35 @@ the same machine.)
 | POST | `/api/services/:id/stop` | Stop (docker stop / SIGTERM to the process group) |
 | GET | `/api/services/:id/logs?tail=200` | Tail logs (docker logs / native log file) |
 
+## Stopping / killing services
+
+Each service card has a **Stop** button that stops the service *in its current
+mode* (`POST /api/services/:id/stop`): `docker compose stop <svc>` in Docker
+mode, or `SIGTERM` to the detached process group in Native mode.
+
+To stop things by hand — when the console isn't running, or a process was started
+some other way:
+
+| Service | Docker mode (run from `app/`) | Native mode |
+|---|---|---|
+| frontend | `docker compose stop frontend` | `kill $(lsof -ti tcp:5173)` |
+| backend | `docker compose stop backend` | `kill $(lsof -ti tcp:8080)` |
+| postgres | `docker compose stop postgres` | — (docker only) |
+| tei | `docker compose --profile docker-tei stop tei` | `kill $(lsof -ti tcp:8086)` |
+
+Native runs are **detached process groups**; the console records the PID in
+`/tmp/aip-console/<id>.pid` (logs in `/tmp/aip-console/<id>.log`). To kill the
+whole group the way the Stop button does — which also reaps child processes such
+as Vite under `npm run dev`:
+
+```bash
+kill -- -"$(cat /tmp/aip-console/frontend.pid)"   # negative PID = process group
+kill -- -"$(cat /tmp/aip-console/backend.pid)"
+```
+
+The console itself (`:9091` API, `:5175` SPA) stops with `Ctrl+C` in its
+`npm run dev` terminal.
+
 # Text Embeddings Inference (TEI) Setup Guide
 
 This guide provides instructions for deploying and troubleshooting Hugging Face's Text Embeddings Inference (TEI) server for large models (e.g., `intfloat/e5-large-v2`). It covers optimized setups for NVIDIA GPUs and Apple Silicon, as well as common memory exhaustion issues.

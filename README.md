@@ -88,6 +88,31 @@ cd console && npm run install:all && npm run dev
 # SPA: http://127.0.0.1:5175  ·  API: http://127.0.0.1:9091/api
 ```
 
+### Stopping services
+
+**Docker** — from `app/`:
+
+```bash
+docker compose stop frontend backend   # stop just those two, keep the containers
+docker compose stop                     # stop the whole stack (incl. postgres)
+docker compose down                     # stop + remove containers (Postgres data survives in its volume)
+```
+
+**Native (local dev)** — `Ctrl+C` in the service's own terminal, or kill by port:
+
+```bash
+kill $(lsof -ti tcp:5173)   # frontend (Vite dev server)
+kill $(lsof -ti tcp:8080)   # backend (./gradlew bootRun)
+```
+
+Services launched through the [dev console](console/README.md) in **native** mode
+are stopped by its **Stop** button, or by killing the recorded process group:
+
+```bash
+kill -- -"$(cat /tmp/aip-console/frontend.pid)"   # negative PID = whole process group
+kill -- -"$(cat /tmp/aip-console/backend.pid)"
+```
+
 ### Tests
 
 ```bash
